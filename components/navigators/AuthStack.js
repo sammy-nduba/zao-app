@@ -2,7 +2,8 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { FarmDetails, Login, Register, 
-    ForgotPassword, OTPScreen, NewFarmerForm, ExperiencedFarmerForm } from '../../screens';
+    ForgotPassword, OTPScreen, NewFarmerForm, ExperiencedFarmerForm, 
+    Home} from '../../screens';
    
 
 
@@ -19,7 +20,9 @@ const AuthStack = () => {
             <Stack.Screen name="FarmDetails" component={FarmDetails} />
 
             <Stack.Screen name="NewFarmerForm" component={NewFarmerForm} />
-            
+
+            <Stack.Screen name ="Home" component={Home} />
+             
             
             <Stack.Screen name="ExperiencedFarmerForm" component={ExperiencedFarmerForm} />
             

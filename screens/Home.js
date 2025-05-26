@@ -5,9 +5,13 @@ import { colors } from '../config/theme';
 import { onBoardingContext } from '../utils/context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import { useNavigation } from '@react-navigation/native';
+
 
 
 const Home = () => {
+  const navigation = useNavigation();
+
   const { setIsLoggedIn, setUser, user } = useContext(onBoardingContext);
 
   const handleLogout = async () => {
@@ -19,7 +23,9 @@ const Home = () => {
         type: 'success',
         text1: 'Logged Out',
         text2: 'You have been logged out successfully',
+        
       });
+      navigation.navigate("Login")
     } catch (error) {
       console.warn('Logout error:', error);
       Toast.show({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { StyledText, StyledTextInput, StyledButton, ScrollableMainContainer, CropSelection } from '../../../components';
 import { colors } from '../../../config/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,12 +10,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
   const navigation = useNavigation();
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   // Options for different form fields
   const cropOptions = ['Avocado', 'Tomato', 'Maize', 'Cabbage', 'Rice'];
   const farmSizeOptions = ['0-5 acres (Small Scale)', '5-20 acres (Medium Scale)', '20+ acres (Large Scale)'];
   const fertilizerOptions = ['CAN', 'DSP', 'NPK', 'Other'];
+  
 
   // Load stored form data on mount
   useEffect(() => {
@@ -24,14 +26,25 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
         const storedData = await AsyncStorage.getItem('@ZaoAPP:ExperiencedFarmerForm');
         if (storedData) {
           const parsedData = JSON.parse(storedData);
-          Object.keys(parsedData).forEach((key) => onFormChange(key, parsedData[key]));
+          Object.keys(parsedData).forEach((key) => {
+            onFormChange(key, parsedData[key]);
+            if (key === 'lastManure' && parsedData[key]) {
+              // Parse the stored date string back to Date object
+              const dateParts = parsedData[key].split('/');
+              const date = new Date(`${dateParts[2]}-${dateParts[0]}-${dateParts[1]}`);
+              if (!isNaN(date.getTime())) {
+                setSelectedDate(date);
+              }
+            }
+          });
         }
       } catch (error) {
-        console.warn('Error loading ExperiencedFarmerForm data:', error);
+        console.warn('Error loading NewFarmerForm data:', error);
       }
     };
     loadStoredData();
   }, []);
+
 
   // Handle crop selection changes
   const handleCropChange = (crop) => {
@@ -61,14 +74,20 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
     });
   };
 
-  const handleDateChange = (date) => {
-    const formattedDate = date.toLocaleDateString('en-US', {
-      month: '2-digit',
-      day: '2-digit',
-      year: 'numeric',
-    });
-    onFormChange('lastManure', formattedDate);
-    setDatePickerOpen(false);
+  const handleDateChange = (event, date) => {
+    setShowDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
+    
+    if (date) {
+      setSelectedDate(date);
+      const formattedDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+      onFormChange('lastManure', formattedDate);
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Date Selected',
+        text2: `Last manure date set to ${formattedDate}`,
+      });
+    }
   };
 
   const handleGetStarted = async () => {
@@ -184,24 +203,36 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
       {/* Manure Section */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>When was the last time you applied manure?</StyledText>
-        <StyledTextInput
-          placeholder="Select date..."
-          value={formData.lastManure}
-          editable={false}
-          style={styles.input}
-          onPress={() => setDatePickerOpen(true)}
-        />
-        <DatePicker
-          modal
-          open={datePickerOpen}
-          date={formData.lastManure ? new Date(formData.lastManure) : new Date()}
-          onConfirm={handleDateChange}
-          onCancel={() => setDatePickerOpen(false)}
-          mode="date"
-          title="Select Manure Application Date"
-          confirmText="Select"
-          cancelText="Cancel"
-        />
+        <View style={styles.inputContainer}>
+          <StyledTextInput
+            placeholder="Select date..."
+            value={formData.lastManure}
+            editable={false}
+            style={[styles.input, styles.dateInput]}
+            onPressIn={() => setShowDatePicker(true)}
+            testID="date-input"
+          />
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setShowDatePicker(true)}
+            testID="date-picker-icon"
+          >
+            <MaterialCommunityIcons name="calendar" size={24} color={colors.grey[600]} />
+          </TouchableOpacity>
+        </View>
+        
+        {showDatePicker && (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={handleDateChange}
+            maximumDate={new Date()}
+            themeVariant="light"
+            textColor={colors.grey[600]}
+            testID="date-picker"
+          />
+        )}
       </View>
 
       {/* Fertilizer Section */}

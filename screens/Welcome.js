@@ -34,7 +34,7 @@ const Welcome = ({ route }) => {
       setTimeout(() => {
         setIsZaoAppOnboarded(true);
         setCompletingOnboarding(false);
-        navigation.navigate('Home');
+        navigation.navigate('Register');
       }, 500);
     } catch (error) {
       console.warn(error);

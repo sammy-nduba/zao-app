@@ -2,7 +2,7 @@ import React from 'react';
 import { useContext, useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import {StyledButton} from "../../components";
-import { Welcome, Register } from '../../screens'; 
+import { LanguageSelectionScreen, Welcome } from '../../screens'; 
 import { onBoardingContext } from "../../utils/context";
 import { storeData } from "../../utils/storage";
 import { colors } from "../../config/theme";

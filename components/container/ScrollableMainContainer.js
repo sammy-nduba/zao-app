@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView} from 'react-native';
 import { colors } from "../../config/theme";
 import { onIOS } from "../../config/constants";
 import { HeaderHeightContext } from '@react-navigation/elements';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 
 
@@ -10,7 +11,7 @@ import { HeaderHeightContext } from '@react-navigation/elements';
 const ScrollableMainContainer = ({ children, style, contentContainerStyle, ...props} ) => {
     
     return (
-        <KeyboardAvoidingView
+        <KeyboardAwareScrollView
             behavior = { onIOS ? "padding" : undefined}
             style = {{ flex: 1 }}
             keyboardVerticalOffset = {useContext(HeaderHeightContext) ?? 0} >
@@ -28,7 +29,7 @@ const ScrollableMainContainer = ({ children, style, contentContainerStyle, ...pr
                      
                 </ScrollView>
           
-            </KeyboardAvoidingView>
+            </KeyboardAwareScrollView>
 
 
             

@@ -3,7 +3,7 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { FarmDetails, Login, Register, 
     ForgotPassword, OTPScreen, NewFarmerForm, ExperiencedFarmerForm, 
-    Home} from '../../screens';
+    Home, LanguageSelectionScreen, Welcome} from '../../screens';
    
 
 
@@ -12,6 +12,10 @@ const Stack = createStackNavigator();
 const AuthStack = () => {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
+
+            {/* <Stack.Screen name="LanguageSelectionScreen" component={LanguageSelectionScreen} /> */}
+
+            {/* <Stack.Screen name = " Welcome" component={Welcome} /> */}
            
              <Stack.Screen name="Register" component={Register} />
 

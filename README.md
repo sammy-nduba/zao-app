@@ -117,7 +117,8 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 📧 Contact
 
 For questions or suggestions, please contact:
-[Your Name] - [your.email@example.com]
+Sam - sammynduba15@gmail.com
+
 
 Last Updated: August 2023
 Version: 0.8.0 (Beta)

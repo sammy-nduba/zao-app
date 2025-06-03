@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { ScrollableMainContainer, StyledTextInput, StyledButton, StyledText } from '../../components';
+import { ScrollableMainContainer, StyledButton,} from '../../components';
+import StyledTextInput from '../../components/inputs/StyledTextInput';
+import StyledText from '../../components/Texts/StyledText';
 import { colors } from '../../config/theme';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+
+
+console.log("OTP screen", StyledTextInput)
 
 const OTPScreen = () => {
   const [otp, setOtp] = useState(['', '', '', '', '']);

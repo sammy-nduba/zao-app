@@ -1,8 +1,9 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
-import { StyledText } from '../../components';
+import StyledText from '../Texts/StyledText';
 import { colors } from '../../config/theme';
 import { AntDesign } from '@expo/vector-icons';
+
 
 const StyledButton = ({ title, icon, onPress, style, isSocial = false, disabled = false }) => {
   return (

@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { onBoardingData } from '../config/data';
 import StyledText from '../components/Texts/StyledText';
@@ -9,7 +9,6 @@ import { useNavigation } from '@react-navigation/native';
 import { storeData } from '../utils/storage';
 import { onBoardingContext } from '../utils/context';
 
-// console.log({ StyledText, MaterialCommunityIcons, Feather, onBoardingContext });
 
 const Welcome = ({ route }) => {
   const navigation = useNavigation();
@@ -34,7 +33,7 @@ const Welcome = ({ route }) => {
       setTimeout(() => {
         setIsZaoAppOnboarded(true);
         setCompletingOnboarding(false);
-        navigation.navigate('Register');
+        navigation.navigate('Auth');
       }, 500);
     } catch (error) {
       console.warn(error);

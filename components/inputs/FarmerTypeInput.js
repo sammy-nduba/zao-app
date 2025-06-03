@@ -1,8 +1,10 @@
 // components/FarmerTypeInput.js
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { StyledText, StyledButton } from '../../components';
+import { StyledButton } from '../../components';
+import StyledText from '../Texts/StyledText';
 import { colors } from '../../config/theme';
+
 
 const FarmerTypeInput = ({ value, onChange }) => {
 

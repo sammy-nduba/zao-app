@@ -1,12 +1,15 @@
 import React, { useState, useContext } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { StyledButton, ScrollableMainContainer, StyledTextInput, StyledText } from '../../components';
+import { StyledButton, ScrollableMainContainer } from '../../components';
+import StyledText from '../../components/Texts/StyledText'
+import StyledTextInput from '../../components/inputs/StyledTextInput'
 import { colors } from '../../config/theme';
 import { onBoardingContext } from '../../utils/context';
 import { useNavigation } from '@react-navigation/native';
 import { storeData } from '../../utils/storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+
 
 const Login = () => {
   const { setIsLoggedIn, setUser, authError, setAuthError, isLoading, setIsLoading } =
@@ -73,7 +76,7 @@ const Login = () => {
         text1: 'Success',
         text2: 'Login successful!',
       });
-      navigation.navigate('FarmDetails');
+      navigation.navigate('Home');
     } catch (error) {
       Toast.show({
         type: 'error',
@@ -96,7 +99,7 @@ const Login = () => {
         text1: 'Success',
         text2: `Logged in with ${provider}!`,
       });
-      navigation.navigate('FarmDetails');
+      navigation.navigate('Home');
     }, 500);
   };
 

@@ -1,92 +1,60 @@
-import React, { useContext } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { StyledButton, StyledText, ScrollableMainContainer } from '../components';
+import React from 'react';
+import { View, StatusBar, StyleSheet, FlatList } from 'react-native';
 import { colors } from '../config/theme';
-import { onBoardingContext } from '../utils/context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Toast from 'react-native-toast-message';
-import { useNavigation } from '@react-navigation/native';
-
-
+import WeatherHeader from '../components/insights/WeatherHeader';
+import AlertBanner from '../components/insights/AlertBanner';
+import CropTaskSection from '../components/insights/CropTaskSection';
+import NewsSection from '../components/insights/NewsSection';
+import useHomeScreenData from '../config/useHomeScreenData';
+import { BottomNavBar } from '../components';
 
 const Home = () => {
-  const navigation = useNavigation();
+  const { dateTime, forecast, alert, cropData, tasks, news } = useHomeScreenData();
 
-  const { setIsLoggedIn, setUser, user } = useContext(onBoardingContext);
+  const sections = [
+    // {type: 'foreacst', data: {day, climate}},
+    { type: 'weather', data: { dateTime, forecast } },
+    { type: 'alert', data: { alert } },
+    { type: 'crop', data: { cropData, tasks } },
+    { type: 'news', data: { news } },
+  ];
 
-  const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem('@ZaoAPP:Login');
-      setIsLoggedIn(false);
-      setUser(null);
-      Toast.show({
-        type: 'success',
-        text1: 'Logged Out',
-        text2: 'You have been logged out successfully',
-        
-      });
-      navigation.navigate("Login")
-    } catch (error) {
-      console.warn('Logout error:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Logout Failed',
-        text2: 'An error occurred while logging out',
-      });
+  const renderSection = ({ item }) => {
+    switch (item.type) {
+      case 'weather':
+        return <WeatherHeader dateTime={item.data.dateTime} forecast={item.data.forecast} />;
+      case 'crop':
+        return <CropTaskSection cropData={item.data.cropData} tasks={item.data.tasks} />;
+        case 'alert':
+        return <AlertBanner alert={item.data.alert} />;
+      case 'news':
+        return <NewsSection news={item.data.news} />;
+      default:
+        return null;
     }
   };
 
   return (
-    <ScrollableMainContainer contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <StyledText style={styles.title}>Welcome to Zao App</StyledText>
-        <StyledText style={styles.subtitle}>
-          {user?.farmerData
-            ? `Farmer: ${user.farmerData.selectedCrops.join(', ')} in ${user.farmerData.location}`
-            : 'You are logged in!'}
-        </StyledText>
-      </View>
-      <View style={styles.buttonContainer}>
-        <StyledButton
-          title="Log Out"
-          onPress={handleLogout}
-          style={styles.logoutButton}
-        />
-      </View>
-    </ScrollableMainContainer>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <FlatList
+        data={sections}
+        renderItem={renderSection}
+        keyExtractor={(item) => item.type}
+        contentContainerStyle={styles.contentContainer}
+      />
+      {/* <BottomNavBar/> */}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
+    flex: 1,
     backgroundColor: colors.background,
-    paddingHorizontal: 24,
   },
-  header: {
-    marginTop: 420,
-    marginBottom: 32,
-  },
-  title: {
-    fontFamily: 'Roboto',
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.grey[600],
-  },
-  subtitle: {
-    fontFamily: 'Roboto',
-    fontSize: 16,
-    color: colors.grey[500],
-    fontWeight: '400',
-  },
-  buttonContainer: {
-    marginBottom: 24,
-  },
-  logoutButton: {
-    width: '100%',
-    height: 56,
-    borderRadius: 32,
-    backgroundColor: colors.primary[600],
+  contentContainer: {
+    paddingBottom: 100, // Space for bottom 
   },
 });
 

@@ -1,13 +1,13 @@
-// screens/FarmDetails.js
 import React, { useState } from 'react';
 import { View, StyleSheet, Image } from 'react-native';
-import {  StyledText, ScrollableMainContainer, StyledButton,
+import {  ScrollableMainContainer,
   FarmerTypeInput } from '../../../components';
+  import StyledText from '../../../components/Texts/StyledText';
 import { colors } from '../../../config/theme';
 import NewFarmerForm from './NewFarmerForm'
 import ExperiencedFarmerForm from './ExperiencedFarmerForm';
 
-
+console.log("Farmer Details", ExperiencedFarmerForm)
 
 const FarmDetails = ( {navigation}) => {
   const [farmerType, setFarmerType] = useState('new');
@@ -41,7 +41,7 @@ const FarmDetails = ( {navigation}) => {
 
   const handleSubmit = () => {
     console.log('Form submitted:', { farmerType, ...formData });
-    navigation.navigate('Home')
+    navigation.navigate('Login')
   };
 
 

@@ -1,21 +1,20 @@
-import React, { useState, useEffect }  from 'react';
-import { NavigationContainer } from "@react-navigation/native";
+import React, { useState, useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import OnboardingStack from './components/navigators/OnboardingStacks';
 import AuthStack from './components/navigators/AuthStack';
-import Home from './screens/Home';
+import { BottomNavBar } from './components';
+import { ErrorScreen } from './screens';
 import { onBoardingContext } from './utils/context';
 import { getData } from './utils/storage';
 import Toast from 'react-native-toast-message';
 import ToastConfig from './utils/ToastConfig';
-import { ErrorScreen, FarmDetails } from './screens'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-console.log( "APP:", ToastConfig)
-
+const Stack = createStackNavigator();
 
 export default function App() {
   const [appReady, setAppReady] = useState(false);
@@ -31,46 +30,50 @@ export default function App() {
   });
 
   // Prepare app as splash screen shows
-  // In App.js, inside prepareApp
-const prepareApp = async () => {
-  try {
-    const [onboardingStatus, registrationStatus, loginStatus, newFarmerData, experiencedFarmerData] = await Promise.all([
-      getData('@ZaoAPP:Onboarding'),
-      getData('@ZaoAPP:Registration'),
-      getData('@ZaoAPP:Login'),
-      AsyncStorage.getItem('@ZaoAPP:NewFarmerForm'),
-      AsyncStorage.getItem('@ZaoAPP:ExperiencedFarmerForm'),
-    ]);
+  const prepareApp = async () => {
+    try {
+      const [onboardingStatus, registrationStatus, loginStatus, newFarmerData, experiencedFarmerData] =
+        await Promise.all([
+          getData('@ZaoAPP:Onboarding'),
+          getData('@ZaoAPP:Registration'),
+          getData('@ZaoAPP:Login'),
+          AsyncStorage.getItem('@ZaoAPP:NewFarmerForm'),
+          AsyncStorage.getItem('@ZaoAPP:ExperiencedFarmerForm'),
+        ]);
 
-    console.log(
-      'App initialization - Onboarding:', onboardingStatus,
-      'Registration:', registrationStatus,
-      'Login:', loginStatus,
-      'NewFarmer:', newFarmerData,
-      'ExperiencedFarmer:', experiencedFarmerData
-    );
+      console.log(
+        'App initialization - Onboarding:', onboardingStatus,
+        'Registration:', registrationStatus,
+        'Login:', loginStatus,
+        'NewFarmer:', newFarmerData,
+        'ExperiencedFarmer:', experiencedFarmerData
+      );
 
-    setAuthState((prev) => ({
-      ...prev,
-      isZaoAppOnboarded: onboardingStatus === true,
-      isRegistered: registrationStatus === true,
-      isLoggedIn: loginStatus === true,
-      user: {
-        ...prev.user,
-        farmerData: newFarmerData ? JSON.parse(newFarmerData) : experiencedFarmerData ? JSON.parse(experiencedFarmerData) : null,
-      },
-    }));
-  } catch (error) {
-    console.warn('App initialization error:', error);
-    setAuthState((prev) => ({
-      ...prev,
-      authError: error.message,
-    }));
-  } finally {
-    setAppReady(true);
-    await SplashScreen.hideAsync();
-  }
-};
+      setAuthState((prev) => ({
+        ...prev,
+        isZaoAppOnboarded: onboardingStatus === true,
+        isRegistered: registrationStatus === true,
+        isLoggedIn: loginStatus === true,
+        user: {
+          ...prev.user,
+          farmerData: newFarmerData
+            ? JSON.parse(newFarmerData)
+            : experiencedFarmerData
+            ? JSON.parse(experiencedFarmerData)
+            : null,
+        },
+      }));
+    } catch (error) {
+      console.warn('App initialization error:', error);
+      setAuthState((prev) => ({
+        ...prev,
+        authError: error.message,
+      }));
+    } finally {
+      setAppReady(true);
+      await SplashScreen.hideAsync();
+    }
+  };
 
   useEffect(() => {
     prepareApp();
@@ -93,32 +96,6 @@ const prepareApp = async () => {
       setAuthState((prev) => ({ ...prev, authError: error })),
   };
 
-  // Determine initial route based on auth state
-  const getInitialRoute = () => {
-    // Still loading or error state
-    if (authState.authError) {
-      return <ErrorScreen error={authState.authError} />;
-    }
-
-    // First-time user flow
-    if (authState.isZaoAppOnboarded === false) {
-      return <OnboardingStack />;
-    }
-
-    // Registered or unregistered user who needs to authenticate
-    if (authState.isZaoAppOnboarded && !authState.isLoggedIn) {
-      return <AuthStack />;
-    }
-
-    if (authState.isZaoAppOnboarded && authState.isLoggedIn) {
-      return <AuthStack/>;
-    }
-
-
-    // Logged-in user - go to home
-    return <Home />;
-  };
-
   // Prevent rendering until initialization completes
   if (!appReady || authState.isZaoAppOnboarded === null) {
     return null;
@@ -128,11 +105,27 @@ const prepareApp = async () => {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <onBoardingContext.Provider value={contextValue}>
         <NavigationContainer>
-          {getInitialRoute()}
+          <Stack.Navigator
+            initialRouteName={
+              authState.authError
+                ? 'Error'
+                : authState.isZaoAppOnboarded === false
+                ? 'Onboarding'
+                : authState.isLoggedIn
+                ? 'Main'
+                : 'Auth'
+            }
+            screenOptions={{ headerShown: false }}
+          >
+            <Stack.Screen name="Error" component={ErrorScreen} headerShown= {false} />
+            <Stack.Screen name="Onboarding" component={OnboardingStack} headerShown= {false}  />
+            <Stack.Screen name="Auth" component={AuthStack} headerShown= {false}  />
+            <Stack.Screen name="Main" component={BottomNavBar} headerShown= {false}  />
+          </Stack.Navigator>
           <StatusBar style="auto" />
         </NavigationContainer>
+        <Toast config={ToastConfig} />
       </onBoardingContext.Provider>
-      <Toast config={ToastConfig} />
     </GestureHandlerRootView>
   );
 }

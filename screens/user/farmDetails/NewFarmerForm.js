@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { StyledText, StyledTextInput, StyledButton, ScrollableMainContainer, CropSelection } from '../../../components';
+import { StyledButton, ScrollableMainContainer, CropSelection } from '../../../components';
+import StyledText from '../../../components/Texts/StyledText';
+import StyledTextInput from '../../../components/inputs/StyledTextInput';
 import { colors } from '../../../config/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
 
 const NewFarmerForm = ({ formData, onFormChange }) => {
   const navigation = useNavigation();
@@ -101,7 +105,7 @@ const NewFarmerForm = ({ formData, onFormChange }) => {
         text1: 'Success',
         text2: 'Form submitted! Welcome to your dashboard.',
       });
-      navigation.navigate('Home');
+      navigation.navigate('Login');
     } catch (error) {
       console.warn('Error storing NewFarmerForm data:', error);
       Toast.show({

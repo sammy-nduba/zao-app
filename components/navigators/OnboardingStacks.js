@@ -1,11 +1,12 @@
-import React from 'react';
-import { useContext, useState } from "react";
+import React, { useContext, useState } from 'react';
 import { createStackNavigator } from "@react-navigation/stack";
 import {StyledButton} from "../../components";
-import { LanguageSelectionScreen, Welcome } from '../../screens'; 
+import Welcome from '../../screens/Welcome'; 
 import { onBoardingContext } from "../../utils/context";
 import { storeData } from "../../utils/storage";
 import { colors } from "../../config/theme";
+
+
 
 const Stack = createStackNavigator();
 

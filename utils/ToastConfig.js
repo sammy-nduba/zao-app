@@ -2,6 +2,7 @@ import { StyleSheet } from 'react-native';
 import { colors } from '../config/theme';
 import { View } from 'react-native';
 
+
 export const ToastConfig = {
   success: ({ text1, text2 }) => (
     <View style={styles.successToast}>

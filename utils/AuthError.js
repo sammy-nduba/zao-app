@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { StyledText } from '../components/Texts/StyledText';
+import StyledText from '../components/Texts/StyledText';
 import { colors } from '../../config/theme';
 import { MaterialIcons } from '@expo/vector-icons';
 

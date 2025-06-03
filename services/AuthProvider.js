@@ -1,7 +1,8 @@
 
-// src/context/AuthContext.js
 import React, { createContext, useState, useContext } from 'react';
 import { AuthService } from '../services/AuthService';
+
+console.log("AuthContext", AuthContext)
 
 const AuthContext = createContext();
 
@@ -34,6 +35,29 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
+
+    // const newFarmer = async (email, password) => {
+    //   setLoading(true);
+    //   try {
+    //     const userData = await AuthService.login(email, password);
+    //     setUser(userData);
+    //   } catch (err) {
+    //     setError(err.message);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+
+
+    // const experiencedFarmer = async (email, password) => {
+    //   setLoading(true);
+    //   try {
+    //     const userData = await AuthService.login(email, password);
+    //     setUser(userData);
+    //   } catch (err) {
+    //     setError(err.message);
+    //   } finally {
+    //     setLoading(false);
+    //   }
   };
 
   // logout(), etc.

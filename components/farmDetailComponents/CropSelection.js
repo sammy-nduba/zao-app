@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { StyledText } from '../../components';
+import StyledText from '../Texts/StyledText';
 import { colors } from '../../config/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+
 
 
 

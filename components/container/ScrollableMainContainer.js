@@ -22,6 +22,9 @@ const ScrollableMainContainer = ({ children, style, contentContainerStyle, ...pr
                 style = {[{flex: 1, backgroundColor:  colors.background}, style ]} 
                 showsVerticalScrollIndicator = {false}
                 contentContainerStyle = {contentContainerStyle}
+                keyboardShouldPersistTaps = "handled"
+                extraScrollHeight = {20}
+                enableAutomaticScroll={true}
                 {...props}
                 >
 

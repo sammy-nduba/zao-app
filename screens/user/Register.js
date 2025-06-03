@@ -1,6 +1,9 @@
 import React, { useState, useContext } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { ScrollableMainContainer, StyledTextInput, StyledButton, StyledText } from '../../components';
+import { ScrollableMainContainer } from '../../components';
+import StyledTextInput from '../../components/inputs/StyledTextInput'
+import StyledText from '../../components/Texts/StyledText';
+import StyledButton from '../../components/Buttons/StyledButton';
 import { colors } from '../../config/theme';
 import { onBoardingContext } from '../../utils/context';
 import { useNavigation } from '@react-navigation/native';
@@ -8,6 +11,7 @@ import { storeData } from '../../utils/storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 // import { FarmDetails } from './farmDetails/FarmDetails'
+
 
 const Register = () => {
   const [firstName, setFirstName] = useState('');
@@ -74,7 +78,7 @@ const Register = () => {
         text1: 'Success',
         text2: 'Registration successful! Please log in.',
       });
-      navigation.navigate('Login');
+      navigation.navigate('FarmDetails');
     } catch (error) {
       // Error shown via Toast
     } finally {

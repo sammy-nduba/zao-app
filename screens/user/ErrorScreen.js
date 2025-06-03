@@ -1,7 +1,10 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { StyledText, StyledButton } from '../../components';
+import { StyledButton } from '../../components';
+import StyledText from '../../components/Texts/StyledText';
 import { colors } from '../../config/theme';
+
+// console.log("Error Screen", StyledButton, StyledText)
 
 const ErrorScreen = ({ error }) => {
   return (
@@ -13,7 +16,7 @@ const ErrorScreen = ({ error }) => {
         onPress={() => {
           // Reload app or reset state
           // For simplicity, navigate to Welcome
-          // In production, implement proper retry logic
+          // In production, - implement proper retry logic
           window.location.reload();
         }}
         style={styles.button}

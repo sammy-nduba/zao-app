@@ -1,10 +1,13 @@
 
 import React, { useState } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
-import { ScrollableMainContainer, StyledTextInput, StyledButton, StyledText } from '../../components';
+import { ScrollableMainContainer, StyledButton } from '../../components';
+import StyledText from '../../components/Texts/StyledText';
+import StyledTextInput from '../../components/inputs/StyledTextInput';
 import { colors } from '../../config/theme';
 import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');

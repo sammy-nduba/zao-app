@@ -6,15 +6,17 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import OnboardingStack from './components/navigators/OnboardingStacks';
 import AuthStack from './components/navigators/AuthStack';
-import { BottomNavBar } from './components';
+import { BottomNavStack } from './components';
 import { ErrorScreen } from './screens';
 import { onBoardingContext } from './utils/context';
 import { getData } from './utils/storage';
 import Toast from 'react-native-toast-message';
 import ToastConfig from './utils/ToastConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import HomeStack from './components/navigators/HomeStack';
 
 const Stack = createStackNavigator();
+
 
 export default function App() {
   const [appReady, setAppReady] = useState(false);
@@ -112,7 +114,7 @@ export default function App() {
                 : authState.isZaoAppOnboarded === false
                 ? 'Onboarding'
                 : authState.isLoggedIn
-                ? 'Main'
+                ? 'MainTabs'
                 : 'Auth'
             }
             screenOptions={{ headerShown: false }}
@@ -120,7 +122,11 @@ export default function App() {
             <Stack.Screen name="Error" component={ErrorScreen} headerShown= {false} />
             <Stack.Screen name="Onboarding" component={OnboardingStack} headerShown= {false}  />
             <Stack.Screen name="Auth" component={AuthStack} headerShown= {false}  />
-            <Stack.Screen name="Main" component={BottomNavBar} headerShown= {false}  />
+            <Stack.Screen name="MainTabs" component={BottomNavStack} /> 
+
+            
+
+            
           </Stack.Navigator>
           <StatusBar style="auto" />
         </NavigationContainer>

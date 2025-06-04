@@ -4,22 +4,23 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CurvedBottomBar } from 'react-native-curved-bottom-bar';
 import { colors, spacing } from '../../config/theme';
 import { useNavigation } from '@react-navigation/native';
-import Home from '../../screens/Home';
 import ConnectScreen from '../../screens/insights/connect/ConnectScreen';
 import LearnScreen from '../../screens/insights/learn/LearnScreen';
 import MarketScreen from '../../screens/insights/market/MarketScreen';
 import AIScreen from '../../screens/insights/ai/AiScreen';
-import { HeaderShownContext } from '@react-navigation/elements';
+import HomeStack from './HomeStack';
+
 
 const centralIcon = require('../../assets/insights/cropImage.png');
 
-export const BottomNavBar = () => {
+
+export const BottomNavStack = () => {
   const navigation = useNavigation();
 
   const _renderIcon = (routeName, selectedTab) => {
     let icon = '';
     switch (routeName) {
-      case 'Home':
+      case 'HomeStack':
         return null; 
       case 'connect':
         icon = 'account-group';
@@ -45,7 +46,7 @@ export const BottomNavBar = () => {
   };
 
   const renderTabBar = ({ routeName, selectedTab, navigate }) => {
-    if (routeName === 'Home') return null; // Home is handled by central button
+    if (routeName === 'HomeStack') return null; // Home is handled by central button
     return (
       <TouchableOpacity
         onPress={() => {
@@ -72,19 +73,20 @@ export const BottomNavBar = () => {
       type="UP"
       style={styles.bottomBar}
       height={100}
-      circleWidth={55}
+      circleWidth={65}
       bgColor={colors.primary[800]}
-      backgroundColor={colors.primary[300]}
+      backgroundColor={colors.background}
       borderTopLeftRight
       strokeColor={colors.white}
-      initialRouteName="Home"
+      initialRouteName="HomeStack"
       screenOptions={{ headerShown: false }}
       renderCircle={({ selectedTab, navigate }) => (
         <TouchableOpacity
           style={styles.btnCircleUp}
+      
           onPress={() => {
-            navigation.navigate('Home');
-            navigate('Home');
+            navigation.navigate('HomeStack');
+            navigate('HomeStack');
           }}
         >
           <Image
@@ -94,37 +96,12 @@ export const BottomNavBar = () => {
           />
         </TouchableOpacity>
       )}
-      tabBar={renderTabBar}
-    >
-      <CurvedBottomBar.Screen
-        name="Home"
-        component={Home}
-        position="CENTER"
-      />
-      <CurvedBottomBar.Screen
-        name="connect"
-        position="LEFT"
-        component={ConnectScreen}
-        options={{ headerShown: false }}
-      />
-      <CurvedBottomBar.Screen
-        name="learn"
-        position="LEFT"
-        component={LearnScreen}
-        options={{ headerShown: false }}
-      />
-      <CurvedBottomBar.Screen
-        name="market"
-        position="RIGHT"
-        component={MarketScreen}
-        options={{ headerShown: false }}
-      />
-      <CurvedBottomBar.Screen
-        name="ai"
-        position="RIGHT"
-        component={AIScreen}
-        options={{ headerShown: false }}
-      />
+      tabBar={renderTabBar}>
+      <CurvedBottomBar.Screen name="HomeStack" component={HomeStack} position="CENTER"/>
+      <CurvedBottomBar.Screen name="connect" position="LEFT" component={ConnectScreen} options={{ headerShown: false }} />
+      <CurvedBottomBar.Screen name="learn" position="LEFT" component={LearnScreen } options={{ headerShown: false }}/>
+      <CurvedBottomBar.Screen name="market" position="RIGHT" component={MarketScreen} options={{ headerShown: false }}/>
+      <CurvedBottomBar.Screen name="ai" position="RIGHT" component={AIScreen} options={{ headerShown: false }} />
     </CurvedBottomBar.Navigator>
   );
 };
@@ -152,10 +129,10 @@ const styles = StyleSheet.create({
   btnCircleUp: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.background,
     bottom: 25,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 1 },
@@ -171,4 +148,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BottomNavBar;
+export default BottomNavStack;

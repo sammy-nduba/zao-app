@@ -1,7 +1,7 @@
 export { default as StyledButton } from './Buttons/StyledButton';
 export { default as FarmerTypeInput } from './inputs/FarmerTypeInput';
 export { default as CropSelection } from './farmDetailComponents/CropSelection';
-export { default as BottomNavBar } from './navigators/BottomNavBar';
+export { default as BottomNavStack } from './navigators/BottomNavStack';
 export { default as ScrollableMainContainer } from './container/ScrollableMainContainer';
 export { default as WeatherHeader } from './insights/WeatherHeader';
 export { default as AlertBanner } from './insights/AlertBanner';

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView,
-  StatusBar, Image, Dimensions} from 'react-native';
+  StatusBar, Image, Dimensions, ImageBackground} from 'react-native';
+  import { colors } from '../config/theme'
+  import { useNavigation } from '@react-navigation/native';
 import { GetWeatherUseCase } from '../config/UseCases/GetWeatherUseCase';
 import {GetNewsUseCase }  from '../config/UseCases/GetNewsUseCase';
 import { GetDashboardDataUseCase } from '../config/UseCases/GetDashboardDataUseCase';
@@ -12,6 +14,9 @@ import { LocalDashboardRepository} from '../config/DataLayer/LocalDashboardRepos
 console.log("Home", GetDashboardDataUseCase, GetNewsUseCase, GetWeatherUseCase)
 
 
+const insightBackground = require("../assets/insights/header-background.png")
+
+
 const { width } = Dimensions.get('window');
 
 const useDashboardData = () => {
@@ -20,6 +25,7 @@ const useDashboardData = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedNewsCategory, setSelectedNewsCategory] = useState('kenya');
+
   
   useEffect(() => {
     const loadData = async () => {
@@ -61,11 +67,11 @@ const useDashboardData = () => {
   };
 };
 
-// Weather Component
-const WeatherCard = ({ weatherData }) => {
+// Greeting Section Component
+const GreetingAndWeatherSection = ({ weatherData }) => {
   if (!weatherData) return null;
   
-  const { current, forecast } = weatherData;
+  const { current } = weatherData;
   
   const getWeatherIcon = (condition) => {
     switch (condition) {
@@ -77,7 +83,7 @@ const WeatherCard = ({ weatherData }) => {
       default: return '🌤️';
     }
   };
-  
+
   const formatDate = () => {
     const now = new Date();
     const options = { 
@@ -93,56 +99,79 @@ const WeatherCard = ({ weatherData }) => {
     });
     return `${now.toLocaleDateString('en-US', options)} - ${time}`;
   };
+
+  return (
+    <ImageBackground source={insightBackground} style={styles.greetingWeatherContainer} resizeMode="cover">
+      <View style={styles.greetingWeatherOverlay}>
+
+        {/* Greeting Section */}
+        <View style={styles.greetingSection}>
+          <Text style={styles.greeting}>Good Afternoon Annie!</Text>
+          <Text style={styles.dateTime}>{formatDate()}</Text>
+        </View>
+
+        {/* Weather Section */}
+        <View style={styles.weatherMain}>
+          <View style={styles.weatherLeft}>
+            <Text style={styles.weatherIcon}>{getWeatherIcon(current.condition)}</Text>
+            <Text style={styles.temperature}>{current.temperature}°C</Text>
+            <Text style={styles.location}>{current.location}</Text>
+          </View>
+          
+          <View style={styles.weatherStats}>
+            <View style={styles.weatherStat}>
+              <Text style={styles.weatherStatIcon}>💧</Text>
+              <Text style={styles.weatherStatLabel}>Precipitation: {current.precipitation}%</Text>
+            </View>
+            <View style={styles.weatherStat}>
+              <Text style={styles.weatherStatIcon}>💨</Text>
+              <Text style={styles.weatherStatLabel}>Wind: {current.wind} km/h</Text>
+            </View>
+            <View style={styles.weatherStat}>
+              <Text style={styles.weatherStatIcon}>💦</Text>
+              <Text style={styles.weatherStatLabel}>Humidity: {current.humidity}%</Text>
+            </View>
+            <View style={styles.weatherStat}>
+              <Text style={styles.weatherStatIcon}>🌅</Text>
+              <Text style={styles.weatherStatLabel}>Sunset: {current.sunset}%</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </ImageBackground>
+  );
+};
+const WeatherForecast = ({ weatherData }) => {
+  if (!weatherData) return null;
+  
+  const { forecast } = weatherData;
+  
+  const getWeatherIcon = (condition) => {
+    switch (condition) {
+      case 'sunny': return '☀️';
+      case 'cloudy': return '☁️';
+      case 'partly_cloudy': return '⛅';
+      case 'rain': return '🌧️';
+      case 'partly_cloudy_rain': return '🌦️';
+      default: return '🌤️';
+    }
+  };
   
   return (
-    <View style={styles.weatherContainer}>
-      <View style={styles.weatherHeader}>
-        <Text style={styles.greeting}>Good Afternoon Annie!</Text>
-        <Text style={styles.dateTime}>{formatDate()}</Text>
-      </View>
-      
-      <View style={styles.weatherMain}>
-        <View style={styles.weatherLeft}>
-          <Text style={styles.weatherIcon}>{getWeatherIcon(current.condition)}</Text>
-          <Text style={styles.temperature}>{current.temperature}°C</Text>
-          <Text style={styles.location}>{current.location}</Text>
-        </View>
-        
-        <View style={styles.weatherStats}>
-          <View style={styles.weatherStat}>
-            <Text style={styles.weatherStatIcon}>💧</Text>
-            <Text style={styles.weatherStatLabel}>Precipitation: {current.precipitation}%</Text>
+    <View style={styles.forecastContainer}>
+      <Text style={styles.forecastTitle}>Seven Day Forecast</Text>
+      <View style={styles.forecastDays}>
+        {forecast.map((day, index) => (
+          <View key={index} style={[styles.forecastDay, day.isToday && styles.forecastDayToday]}>
+            <Text style={[styles.forecastDayText, day.isToday && styles.forecastDayTextToday]}>
+              {day.day}
+            </Text>
+            <Text style={styles.forecastIcon}>{getWeatherIcon(day.condition)}</Text>
+            <Text style={[styles.forecastTemp, day.isToday && styles.forecastTempToday]}>
+              {day.temperature}°
+            </Text>
           </View>
-          <View style={styles.weatherStat}>
-            <Text style={styles.weatherStatIcon}>💨</Text>
-            <Text style={styles.weatherStatLabel}>Wind: {current.wind} km/h</Text>
-          </View>
-          <View style={styles.weatherStat}>
-            <Text style={styles.weatherStatIcon}>💦</Text>
-            <Text style={styles.weatherStatLabel}>Humidity: {current.humidity}%</Text>
-          </View>
-          <View style={styles.weatherStat}>
-            <Text style={styles.weatherStatIcon}>🌅</Text>
-            <Text style={styles.weatherStatLabel}>Sunset: {current.sunset}%</Text>
-          </View>
-        </View>
-      </View>
-      
-      <View style={styles.forecastContainer}>
-        <Text style={styles.forecastTitle}>Seven Day Forecast</Text>
-        <View style={styles.forecastDays}>
-          {forecast.map((day, index) => (
-            <View key={index} style={[styles.forecastDay, day.isToday && styles.forecastDayToday]}>
-              <Text style={[styles.forecastDayText, day.isToday && styles.forecastDayTextToday]}>
-                {day.day}
-              </Text>
-              <Text style={styles.forecastIcon}>{getWeatherIcon(day.condition)}</Text>
-              <Text style={[styles.forecastTemp, day.isToday && styles.forecastTempToday]}>
-                {day.temperature}°
-              </Text>
-            </View>
-          ))}
-        </View>
+        ))}
       </View>
     </View>
   );
@@ -292,7 +321,8 @@ const NewsSection = ({ newsData, selectedCategory, onCategoryChange }) => {
 };
 
 // Main Dashboard Screen
-const Home = ({ navigation }) => {
+const Home = () => {
+
   const { 
     weatherData, 
     newsData, 
@@ -301,16 +331,18 @@ const Home = ({ navigation }) => {
     selectedNewsCategory, 
     setSelectedNewsCategory 
   } = useDashboardData();
+
+  const navigation = useNavigation();
+
+
   
   const handleSeeMore = () => {
-    // Navigate to My Crop screen
     if (navigation) {
-      navigation.navigate('MyCrop');
+      navigation.navigate('MyCropScreen', { cropData: dashboardData.cropData });
     } else {
-      console.log('Navigate to My Crop screen');
+      console.log('Navigation not available');
     }
   };
-  
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -323,11 +355,14 @@ const Home = ({ navigation }) => {
   
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#4A90E2" />
+      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Weather Section */}
-        <WeatherCard weatherData={weatherData} />
+        {/* Greeting and Weather Section */}
+        <GreetingAndWeatherSection weatherData={weatherData} />
+        
+        {/* Weather Forecast Section */}
+        <WeatherForecast weatherData={weatherData} />
         
         {/* Alert Section */}
         {dashboardData?.alerts?.map((alert) => (
@@ -351,31 +386,6 @@ const Home = ({ navigation }) => {
         
         <View style={styles.bottomPadding} />
       </ScrollView>
-      
-      {/* Bottom Navigation
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIcon}>🔗</Text>
-          <Text style={styles.navText}>Connect</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIcon}>📚</Text>
-          <Text style={styles.navText}>Learn</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.navItem, styles.navItemCenter]}>
-          <View style={styles.centerNavIcon}>
-            <Text style={styles.centerNavText}>🌱</Text>
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIcon}>🏪</Text>
-          <Text style={styles.navText}>Market</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIcon}>🤖</Text>
-          <Text style={styles.navText}>AI</Text>
-        </TouchableOpacity>
-      </View> */}
     </SafeAreaView>
   );
 };
@@ -383,7 +393,7 @@ const Home = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.primary,
   },
   loadingContainer: {
     flex: 1,
@@ -392,22 +402,25 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    backgroundColor: colors.background
   },
-  weatherContainer: {
-    background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
-    backgroundColor: '#4A90E2',
+  // Combined Greeting and Weather Section Styles
+  greetingWeatherContainer: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 30,
+    paddingVertical: 30,
   },
-  weatherHeader: {
+  greetingWeatherOverlay: {
+    // Add overlay if needed for better text readability
+  },
+  greetingSection: {
+    marginTop: 30,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
   },
   greeting: {
     fontSize: 22,
     fontWeight: '600',
-    color: '#fff',
+    color: '#ffffff',
     marginBottom: 5,
   },
   dateTime: {
@@ -418,7 +431,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 30,
   },
   weatherLeft: {
     alignItems: 'center',
@@ -457,14 +469,20 @@ const styles = StyleSheet.create({
     color: '#E3F2FD',
   },
   forecastContainer: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
     borderRadius: 15,
     padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   forecastTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: '#333333',
     marginBottom: 15,
   },
   forecastDays: {
@@ -482,7 +500,7 @@ const styles = StyleSheet.create({
   },
   forecastDayText: {
     fontSize: 12,
-    color: '#E3F2FD',
+    color: '#666666',
     marginBottom: 5,
   },
   forecastDayTextToday: {
@@ -495,7 +513,7 @@ const styles = StyleSheet.create({
   },
   forecastTemp: {
     fontSize: 12,
-    color: '#E3F2FD',
+    color: '#666666',
   },
   forecastTempToday: {
     color: '#fff',
@@ -555,9 +573,10 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   cropCard: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.primary[400],
     borderRadius: 15,
     padding: 20,
+    height: 184,
     flex: 1,
     justifyContent: 'center',
   },
@@ -750,7 +769,7 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
-},
+  },
 });
 
-  export default Home;
+export default Home;

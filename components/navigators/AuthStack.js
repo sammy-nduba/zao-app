@@ -1,15 +1,16 @@
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
 import { FarmDetails, Login, Register, 
     ForgotPassword, OTPScreen, NewFarmerForm, ExperiencedFarmerForm, 
     Home, LanguageSelectionScreen, Welcome} from '../../screens';
+import MyCropScreen from '../../screens/insights/MyCropScreen';
+import BottomNavStack from './BottomNavStack';
+import HomeStack from './HomeStack';
 
 
-    console.log("AuthStack", FarmDetails)
+    console.log("AuthStack", FarmDetails, MyCropScreen)
        
 
 
-const Stack = createStackNavigator();
 
 const AuthStack = () => {
     return (
@@ -29,8 +30,7 @@ const AuthStack = () => {
 
              <Stack.Screen name="Login" component={Login} />
 
-             <Stack.Screen name ="Home" component={Home} />
-            
+             <Stack.Screen name ="Home" component={HomeStack} />            
             
             <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
             

@@ -1,115 +1,113 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { StyledButton, ScrollableMainContainer } from '../../components';
-import StyledText from '../../components/Texts/StyledText'
-import StyledTextInput from '../../components/inputs/StyledTextInput'
+import { ScrollableMainContainer, StyledButton } from '../../components';
+import StyledText from '../../components/Texts/StyledText';
+import StyledTextInput from '../../components/inputs/StyledTextInput';
 import { colors } from '../../config/theme';
-import { onBoardingContext } from '../../utils/context';
+import { AuthContext } from '../../utils/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import { storeData } from '../../utils/storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
-
+import { LoginViewModel } from '../../viewModel/LoginViewModel';
+import container from '../../infrastructure/di/Container';
 
 const Login = () => {
-  const { setIsLoggedIn, setUser, authError, setAuthError, isLoading, setIsLoading } =
-    useContext(onBoardingContext);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { setIsLoggedIn, setUser } = useContext(AuthContext);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+  const [fieldErrors, setFieldErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
   const navigation = useNavigation();
+  const viewModel = useMemo(() => new LoginViewModel(
+    container.get('loginUserUseCase'),
+    container.get('socialLoginUseCase'),
+    container.get('validationService')
+  ), []);
 
-  // Email validation (same as Register.js)
-  const isValidEmail = (email) => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return emailRegex.test(email);
+  const isFormValid = formData.email && formData.password && !fieldErrors.email && !fieldErrors.password;
+
+  const handleFieldChange = (fieldName, value) => {
+    setFormData(prev => ({ ...prev, [fieldName]: value }));
+    viewModel.updateFormData(fieldName, value);
+    setFieldErrors(prev => ({ ...prev, [fieldName]: viewModel.getState().fieldErrors[fieldName] || '' }));
   };
 
   const handleLogin = async () => {
-    setAuthError(null);
-    setEmailError('');
-    setPasswordError('');
-
-    // Validate form
-    let isValid = true;
-    if (!email) {
-      setEmailError('Email is required');
-      Toast.show({
-        type: 'error',
-        text1: 'Missing Email',
-        text2: 'Please enter your email address',
-      });
-      isValid = false;
-    } else if (!isValidEmail(email)) {
-      setEmailError('Please enter a valid email address');
-      Toast.show({
-        type: 'error',
-        text1: 'Invalid Email',
-        text2: 'Please enter a valid email address',
-      });
-      isValid = false;
-    }
-    if (!password) {
-      setPasswordError('Password is required');
-      Toast.show({
-        type: 'error',
-        text1: 'Missing Password',
-        text2: 'Please enter your password',
-      });
-      isValid = false;
-    }
-    if (!isValid) {
-      return;
-    }
-
-    setIsLoading(true);
+    setFieldErrors({});
     try {
-      // Placeholder: Replace with actual authentication
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      await storeData('@ZaoAPP:Login', true);
-      setUser({ email });
-      setIsLoggedIn(true);
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Login successful!',
-      });
-      navigation.navigate('Home');
+      console.log('Submitting login:', formData); 
+      const result = await viewModel.login(formData);
+      
+      if (result.success) {
+        console.log('Login success, setting user:', result.user);
+        setUser(result.user);
+        setIsLoggedIn(true);
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Login successful!',
+        });
+        navigation.replace('MainTabs');
+      } else {
+        console.log('Login failed:', result.error); 
+        setFieldErrors(viewModel.getState().fieldErrors);
+        Toast.show({
+          type: 'error',
+          text1: 'Login Failed',
+          text2: result.error || 'Please check your credentials and try again',
+        });
+      }
     } catch (error) {
+      console.error('Unexpected login error:', error.message); 
       Toast.show({
         type: 'error',
-        text1: 'Login Failed',
-        text2: error.message || 'Login failed. Please try again.',
+        text1: 'Error',
+        text2: error.message.includes('AsyncStorage') 
+          ? 'Storage error. Please try again.'
+          : error.message,
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      storeData('@ZaoAPP:Login', true);
-      setIsLoggedIn(true);
+  const handleSocialLogin = async (provider) => {
+    try {
+      console.log('Social login:', provider); // Debug
+      const result = await viewModel.socialLogin(provider);
+      
+      if (result.success) {
+        console.log('Social login success, setting user:', result.user); // Debug
+        setUser(result.user);
+        setIsLoggedIn(true);
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: `Logged in with ${provider}!`,
+        });
+        navigation.navigate('Home');
+      } else {
+        console.log('Social login failed:', result.error); // Debug
+        Toast.show({
+          type: 'error',
+          text1: 'Social Login Failed',
+          text2: result.error,
+        });
+      }
+    } catch (error) {
+      console.error('Unexpected social login error:', error.message); // Debug
       Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: `Logged in with ${provider}!`,
+        type: 'error',
+        text1: 'Error',
+        text2: error.message.includes('AsyncStorage') 
+          ? 'Storage error. Please try again.'
+          : 'Social login failed',
       });
-      navigation.navigate('Home');
-    }, 500);
+    }
   };
 
-  const goToRegister = () => {
-    navigation.navigate('Register');
-  };
-
-  const goToForgotPassword = () => {
-    navigation.navigate('ForgotPassword');
-  };
+  const goToRegister = () => navigation.navigate('Register');
+  const goToForgotPassword = () => navigation.navigate('ForgotPassword');
 
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
@@ -130,18 +128,15 @@ const Login = () => {
           <StyledText style={styles.inputLabel}>Email</StyledText>
           <StyledTextInput
             placeholder="Enter email address"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              setEmailError('');
-            }}
+            value={formData.email}
+            onChangeText={(text) => handleFieldChange('email', text)}
             keyboardType="email-address"
             autoCapitalize="none"
-            style={[styles.input, emailError ? styles.inputError : null]}
+            style={[styles.input, fieldErrors.email ? styles.inputError : null]}
           />
-          {emailError ? (
-            <StyledText style={styles.fieldErrorText}>{emailError}</StyledText>
-          ) : null}
+          {fieldErrors.email && (
+            <StyledText style={styles.fieldErrorText}>{fieldErrors.email}</StyledText>
+          )}
         </View>
 
         <View style={styles.inputWrapper}>
@@ -149,13 +144,10 @@ const Login = () => {
           <View style={styles.passwordInputContainer}>
             <StyledTextInput
               placeholder="***********"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setPasswordError('');
-              }}
+              value={formData.password}
+              onChangeText={(text) => handleFieldChange('password', text)}
               secureTextEntry={!showPassword}
-              style={[styles.input, passwordError ? styles.inputError : null]}
+              style={[styles.input, fieldErrors.password ? styles.inputError : null]}
             />
             <TouchableOpacity
               style={styles.toggleButton}
@@ -169,8 +161,8 @@ const Login = () => {
             </TouchableOpacity>
           </View>
           <View style={styles.passwordFooter}>
-            {passwordError ? (
-              <StyledText style={styles.fieldErrorText}>{passwordError}</StyledText>
+            {fieldErrors.password ? (
+              <StyledText style={styles.fieldErrorText}>{fieldErrors.password}</StyledText>
             ) : (
               <StyledText style={styles.fieldErrorText} />
             )}
@@ -185,7 +177,7 @@ const Login = () => {
         <StyledButton
           title="Log In"
           onPress={handleLogin}
-          disabled={isLoading || !email || !password}
+          disabled={!isFormValid}
           style={styles.loginButton}
         />
         <View style={styles.dividerContainer}>
@@ -212,7 +204,7 @@ const Login = () => {
         />
         <StyledButton
           title="Continue with Apple"
-          icon="apple1"
+          icon="apple"
           onPress={() => handleSocialLogin('Apple')}
           isSocial
           style={styles.socialButton}
@@ -235,50 +227,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     paddingHorizontal: 24,
   },
-  // vectorContainer: {
-  //   position: 'absolute',
-  //   width: '100%',
-  //   height: '100%',
-  //   zIndex: -1,
-  // },
-  // vector1: {
-  //   position: 'absolute',
-  //   width: 130,
-  //   height: 128,
-  //   top: 100,
-  //   left: 250,
-  //   opacity: 0.1,
-  //   transform: [{ rotate: '-161.18deg' }],
-  // },
-  // vector2: {
-  //   position: 'absolute',
-  //   width: 200,
-  //   height: 200,
-  //   top: 300,
-  //   left: 200,
-  //   opacity: 0.05,
-  // },
   vectorContainer: {
     position: 'absolute',
     width: '100%',
     height: '100%',
-    zIndex: -1, 
+    zIndex: -1,
   },
-  // vector1: {
-  //   position: 'absolute',
-  //   width: 130.41,
-  //   height: 128.5,
-  //   top: 2065.92,
-  //   left: 272.59,
-  //   transform: [{ rotate: '-161.18deg' }],
-  //   backgroundColor: '#FFCD381A', // 10% opacity
-  // },
+  vector1: {
+    position: 'absolute',
+    width: 130.41,
+    height: 128.5,
+    top: 2065.92,
+    left: 272.59,
+    transform: [{ rotate: '-161.18deg' }],
+  },
   vector2: {
     position: 'absolute',
     width: 200,
     height: 200,
     left: 217,
-    // backgroundColor: '#4CAF500D', // 5% opacity
   },
   header: {
     marginTop: 75,
@@ -391,6 +358,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginVertical: 24,
+    backgroundColor: colors.background
   },
   registerText: {
     fontFamily: 'Roboto',

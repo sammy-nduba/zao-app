@@ -1,52 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { StyledButton, ScrollableMainContainer, CropSelection } from '../../../components';
 import StyledText from '../../../components/Texts/StyledText';
 import StyledTextInput from '../../../components/inputs/StyledTextInput';
 import { colors } from '../../../config/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-
-const NewFarmerForm = ({ formData, onFormChange }) => {
-  const navigation = useNavigation();
+const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-
-  // Farm size options
   const farmSizeOptions = ['0-5 acres (Small Scale)', '5-20 acres (Medium Scale)', '20+ acres (Large Scale)'];
 
-  // Load stored form data on mount
-  useEffect(() => {
-    const loadStoredData = async () => {
-      try {
-        const storedData = await AsyncStorage.getItem('@ZaoAPP:NewFarmerForm');
-        if (storedData) {
-          const parsedData = JSON.parse(storedData);
-          Object.keys(parsedData).forEach((key) => {
-            onFormChange(key, parsedData[key]);
-            if (key === 'lastManure' && parsedData[key]) {
-              // Parse the stored date string back to Date object
-              const dateParts = parsedData[key].split('/');
-              const date = new Date(`${dateParts[2]}-${dateParts[0]}-${dateParts[1]}`);
-              if (!isNaN(date.getTime())) {
-                setSelectedDate(date);
-              }
-            }
-          });
-        }
-      } catch (error) {
-        console.warn('Error loading NewFarmerForm data:', error);
-      }
-    };
-    loadStoredData();
-  }, []);
-
-  // Handle crop selection changes
   const handleCropChange = (crop) => {
     const newCrops = formData.selectedCrops.includes(crop)
       ? formData.selectedCrops.filter((item) => item !== crop)
@@ -54,15 +20,12 @@ const NewFarmerForm = ({ formData, onFormChange }) => {
     onFormChange('selectedCrops', newCrops);
   };
 
-  // Handle date picker changes
   const handleDateChange = (event, date) => {
-    setShowDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
-    
+    setShowDatePicker(Platform.OS === 'ios');
     if (date) {
       setSelectedDate(date);
       const formattedDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
       onFormChange('lastManure', formattedDate);
-      
       Toast.show({
         type: 'success',
         text1: 'Date Selected',
@@ -80,45 +43,25 @@ const NewFarmerForm = ({ formData, onFormChange }) => {
   };
 
   const handleGetStarted = async () => {
-    // Validate required fields
-    const missingFields = [];
-    if (!formData.selectedCrops.length) missingFields.push('crops');
-    if (!formData.farmSize) missingFields.push('farm size');
-    if (!formData.location) missingFields.push('location');
-    if (!formData.cropPhase) missingFields.push('crop phase');
-    if (!formData.lastManure) missingFields.push('last manure date');
-
-    if (missingFields.length) {
-      Toast.show({
-        type: 'error',
-        text1: 'Missing Fields',
-        text2: `Please complete: ${missingFields.join(', ')}`,
-      });
-      return;
-    }
-
-    try {
-      // Store form data
-      await AsyncStorage.setItem('@ZaoAPP:NewFarmerForm', JSON.stringify(formData));
+    const success = await viewModel.submitForm();
+    if (success) {
       Toast.show({
         type: 'success',
         text1: 'Success',
         text2: 'Form submitted! Welcome to your dashboard.',
       });
       navigation.navigate('Login');
-    } catch (error) {
-      console.warn('Error storing NewFarmerForm data:', error);
+    } else {
       Toast.show({
         type: 'error',
-        text1: 'Storage Error',
-        text2: 'Failed to save form data. Please try again.',
+        text1: 'Error',
+        text2: viewModel.getState().error,
       });
     }
   };
 
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
-      {/* Crops Section */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>
           What crops are you mostly interested in?
@@ -135,7 +78,6 @@ const NewFarmerForm = ({ formData, onFormChange }) => {
         />
       </View>
 
-      {/* Farm Size Section */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>
           How many acres do you intend to farm on?
@@ -162,7 +104,6 @@ const NewFarmerForm = ({ formData, onFormChange }) => {
         </View>
       </View>
 
-      {/* Location Section */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>Where is your farm located?</StyledText>
         <View style={styles.inputContainer}>
@@ -178,7 +119,6 @@ const NewFarmerForm = ({ formData, onFormChange }) => {
         </View>
       </View>
 
-      {/* Manure Section */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>When was the last time you applied manure?</StyledText>
         <View style={styles.inputContainer}>
@@ -213,7 +153,6 @@ const NewFarmerForm = ({ formData, onFormChange }) => {
         )}
       </View>
 
-      {/* Crop Phase Section */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>What is the current phase of your crop?</StyledText>
         <StyledTextInput
@@ -224,26 +163,14 @@ const NewFarmerForm = ({ formData, onFormChange }) => {
         />
       </View>
 
-      {/* Get Started Button */}
       <StyledButton
         title="Get Started"
         onPress={handleGetStarted}
         style={styles.getStartedButton}
+        disabled={viewModel.getState().isLoading}
       />
     </ScrollableMainContainer>
   );
-};
-
-// Default form data
-NewFarmerForm.defaultProps = {
-  formData: {
-    selectedCrops: [],
-    farmSize: '',
-    location: '',
-    cropPhase: '',
-    lastManure: '',
-  },
-  onFormChange: () => {},
 };
 
 const styles = StyleSheet.create({

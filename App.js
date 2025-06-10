@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
@@ -8,130 +8,132 @@ import OnboardingStack from './components/navigators/OnboardingStacks';
 import AuthStack from './components/navigators/AuthStack';
 import { BottomNavStack } from './components';
 import { ErrorScreen } from './screens';
-import { onBoardingContext } from './utils/context';
-import { getData } from './utils/storage';
+import { AuthContext } from './utils/AuthContext';
 import Toast from 'react-native-toast-message';
 import ToastConfig from './utils/ToastConfig';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import HomeStack from './components/navigators/HomeStack';
+import container from './infrastructure/di/Container';
+import { AuthViewModel } from './viewModel/AuthViewModel';
+import { I18nextProvider } from 'react-i18next';
+import i18n from './infrastructure/i18n/i18n';
 
 const Stack = createStackNavigator();
 
+const ErrorBoundary = ({ children }) => {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return <ErrorScreen error="An unexpected error occurred" />;
+  }
+
+  try {
+    return children;
+  } catch (error) {
+    setHasError(true);
+    return null;
+  }
+};
 
 export default function App() {
+  const navigationRef = useNavigationContainerRef();
   const [appReady, setAppReady] = useState(false);
+  const [i18nReady, setI18nReady] = useState(false);
+  const [viewModel] = useState(() => new AuthViewModel(container.get('storageService')));
+  const [authState, setAuthState] = useState(viewModel.getState());
 
-  // Consolidated auth state
-  const [authState, setAuthState] = useState({
-    isZaoAppOnboarded: null,
-    isRegistered: false,
-    isLoggedIn: false,
-    user: null,
-    isLoading: false,
-    authError: null,
-  });
-
-  // Prepare app as splash screen shows
-  const prepareApp = async () => {
+  const prepareApp = useCallback(async () => {
     try {
-      const [onboardingStatus, registrationStatus, loginStatus, newFarmerData, experiencedFarmerData] =
-        await Promise.all([
-          getData('@ZaoAPP:Onboarding'),
-          getData('@ZaoAPP:Registration'),
-          getData('@ZaoAPP:Login'),
-          AsyncStorage.getItem('@ZaoAPP:NewFarmerForm'),
-          AsyncStorage.getItem('@ZaoAPP:ExperiencedFarmerForm'),
-        ]);
-
-      console.log(
-        'App initialization - Onboarding:', onboardingStatus,
-        'Registration:', registrationStatus,
-        'Login:', loginStatus,
-        'NewFarmer:', newFarmerData,
-        'ExperiencedFarmer:', experiencedFarmerData
-      );
-
-      setAuthState((prev) => ({
-        ...prev,
-        isZaoAppOnboarded: onboardingStatus === true,
-        isRegistered: registrationStatus === true,
-        isLoggedIn: loginStatus === true,
-        user: {
-          ...prev.user,
-          farmerData: newFarmerData
-            ? JSON.parse(newFarmerData)
-            : experiencedFarmerData
-            ? JSON.parse(experiencedFarmerData)
-            : null,
-        },
-      }));
+      await Promise.all([
+        viewModel.initialize(),
+        i18n.init(),
+      ]);
+      setAuthState(viewModel.getState());
+      setI18nReady(true);
+      if (viewModel.getState().authError) {
+        Toast.show({
+          type: 'error',
+          text1: 'Initialization Error',
+          text2: viewModel.getState().authError,
+        });
+      }
     } catch (error) {
-      console.warn('App initialization error:', error);
-      setAuthState((prev) => ({
-        ...prev,
-        authError: error.message,
-      }));
+      viewModel.setAuthError(error.message);
+      setAuthState(viewModel.getState());
     } finally {
       setAppReady(true);
       await SplashScreen.hideAsync();
     }
-  };
+  }, [viewModel]);
 
   useEffect(() => {
     prepareApp();
-  }, []);
+  }, [prepareApp]);
 
-  // Context value with all state and setters
   const contextValue = {
     ...authState,
-    setIsZaoAppOnboarded: (value) =>
-      setAuthState((prev) => ({ ...prev, isZaoAppOnboarded: value })),
-    setIsRegistered: (value) =>
-      setAuthState((prev) => ({ ...prev, isRegistered: value })),
-    setIsLoggedIn: (value) =>
-      setAuthState((prev) => ({ ...prev, isLoggedIn: value })),
-    setUser: (userData) =>
-      setAuthState((prev) => ({ ...prev, user: userData })),
-    setIsLoading: (value) =>
-      setAuthState((prev) => ({ ...prev, isLoading: value })),
-    setAuthError: (error) =>
-      setAuthState((prev) => ({ ...prev, authError: error })),
+    setIsZaoAppOnboarded: (value) => {
+      viewModel.setIsZaoAppOnboarded(value);
+      setAuthState(viewModel.getState());
+    },
+    setIsRegistered: (value) => {
+      viewModel.setIsRegistered(value);
+      setAuthState(viewModel.getState());
+    },
+    setIsLoggedIn: (value) => {
+      viewModel.setIsLoggedIn(value);
+      setAuthState(viewModel.getState());
+    },
+    setUser: (userData) => {
+      viewModel.setUser(userData);
+      setAuthState(viewModel.getState());
+    },
+    setIsLoading: (value) => {
+      viewModel.setIsLoading(value);
+      setAuthState(viewModel.getState());
+    },
+    setAuthError: (error) => {
+      viewModel.setAuthError(error);
+      setAuthState(viewModel.getState());
+    },
   };
 
-  // Prevent rendering until initialization completes
-  if (!appReady || authState.isZaoAppOnboarded === null) {
+  if (!appReady || !i18nReady || authState.isZaoAppOnboarded === null) {
     return null;
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <onBoardingContext.Provider value={contextValue}>
-        <NavigationContainer>
-          <Stack.Navigator
-            initialRouteName={
-              authState.authError
-                ? 'Error'
-                : authState.isZaoAppOnboarded === false
-                ? 'Onboarding'
-                : authState.isLoggedIn
-                ? 'MainTabs'
-                : 'Auth'
-            }
-            screenOptions={{ headerShown: false }}
-          >
-            <Stack.Screen name="Error" component={ErrorScreen} headerShown= {false} />
-            <Stack.Screen name="Onboarding" component={OnboardingStack} headerShown= {false}  />
-            <Stack.Screen name="Auth" component={AuthStack} headerShown= {false}  />
-            <Stack.Screen name="MainTabs" component={BottomNavStack} /> 
-
-            
-
-            
-          </Stack.Navigator>
-          <StatusBar style="auto" />
-        </NavigationContainer>
-        <Toast config={ToastConfig} />
-      </onBoardingContext.Provider>
-    </GestureHandlerRootView>
+    <I18nextProvider i18n={i18n}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AuthContext.Provider value={contextValue}>
+          <ErrorBoundary>
+            <NavigationContainer
+              ref={navigationRef}
+              onStateChange={() => {
+                console.log('Navigation state:', navigationRef.current?.getCurrentRoute());
+              }}
+            >
+              <Stack.Navigator
+                initialRouteName={
+                  authState.authError
+                    ? 'Error'
+                    : authState.isZaoAppOnboarded === false
+                    ? 'Onboarding'
+                    : authState.isLoggedIn
+                    ? 'MainTabs'
+                    : 'Auth'
+                }
+                screenOptions={{ headerShown: false }}
+              >
+                <Stack.Screen name="Error" component={ErrorScreen} />
+                <Stack.Screen name="Onboarding" component={OnboardingStack} />
+                <Stack.Screen name="Auth" component={AuthStack} />
+                <Stack.Screen name="MainTabs" component={BottomNavStack} />
+              </Stack.Navigator>
+              <StatusBar style="auto" />
+            </NavigationContainer>
+            <Toast config={ToastConfig} />
+          </ErrorBoundary>
+        </AuthContext.Provider>
+      </GestureHandlerRootView>
+    </I18nextProvider>
   );
 }

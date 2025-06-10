@@ -1,117 +1,152 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { ScrollableMainContainer } from '../../components';
-import StyledTextInput from '../../components/inputs/StyledTextInput'
+import StyledTextInput from '../../components/inputs/StyledTextInput';
 import StyledText from '../../components/Texts/StyledText';
 import StyledButton from '../../components/Buttons/StyledButton';
 import { colors } from '../../config/theme';
-import { onBoardingContext } from '../../utils/context';
+import { AuthContext } from '../../utils/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import { storeData } from '../../utils/storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
-// import { FarmDetails } from './farmDetails/FarmDetails'
-
+import { RegistrationViewModel } from '../../viewModel/RegistrationViewModel';
+import container from '../../infrastructure/di/Container';
 
 const Register = () => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    password: '',
+  });
+  const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const { setIsRegistered } = useContext(onBoardingContext);
+  const { setIsRegistered } = useContext(AuthContext);
   const navigation = useNavigation();
+  const viewModel = useMemo(() => new RegistrationViewModel(
+    container.get('registerUserUseCase'),
+    container.get('socialRegisterUseCase'),
+    container.get('validationService')
+  ), []);
 
-  // Password requirements validation
-  const requirements = [
-    { label: 'At least 8 characters', test: (pwd) => pwd.length >= 8 },
-    { label: 'An uppercase letter', test: (pwd) => /[A-Z]/.test(pwd) },
-    { label: 'A lowercase letter', test: (pwd) => /[a-z]/.test(pwd) },
-    { label: 'A special character', test: (pwd) => /[!@#$%^&*(),.?":{}|<>]/.test(pwd) },
-    { label: 'A number', test: (pwd) => /[0-9]/.test(pwd) },
-  ];
+  const passwordRequirements = viewModel.getPasswordRequirements(formData.password);
+  const metRequirementsCount = passwordRequirements.filter(req => req.met).length;
+  const isFormValid = Object.values(formData).every(value => value.trim() !== '') &&
+    metRequirementsCount === passwordRequirements.length &&
+    !Object.values(fieldErrors).some(error => error);
 
-  const metRequirementsCount = requirements.filter(({ test }) => test(password)).length;
+  const handleFieldChange = (fieldName, value) => {
+    setFormData(prev => ({ ...prev, [fieldName]: value }));
 
-  // Email format validation
-  const isValidEmail = (email) => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return emailRegex.test(email);
+    // Real-time validation
+    let error = '';
+    if (fieldName === 'phoneNumber') {
+      const { isValid, error: phoneError } = viewModel.validatePhoneNumber(value);
+      error = phoneError;
+    } else if (fieldName === 'email') {
+      const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      error = isValidEmail || value === '' ? '' : 'Invalid email format';
+    } else if (fieldName === 'firstName' || fieldName === 'lastName') {
+      error = value.trim().length >= 2 || value === '' ? '' : 'Must be at least 2 characters';
+    } else if (fieldName === 'password' && value) {
+      error = metRequirementsCount === passwordRequirements.length ? '' : 'Password does not meet requirements';
+    }
+    setFieldErrors(prev => ({ ...prev, [fieldName]: error }));
   };
 
-  const handleRegister = async () => {
-    setIsLoading(true);
-    setEmailError('');
-    try {
-      if (!firstName || !lastName || !email || !password) {
-        Toast.show({
-          type: 'error',
-          text1: 'Missing Fields',
-          text2: 'Please fill in all required fields',
-        });
-        throw new Error('Missing required fields');
-      }
-      if (!isValidEmail(email)) {
-        setEmailError('Please enter a valid email address');
-        Toast.show({
-          type: 'error',
-          text1: 'Invalid Email',
-          text2: 'Please enter a valid email address',
-        });
-        throw new Error('Invalid email format');
-      }
-      if (metRequirementsCount < 5) {
-        Toast.show({
-          type: 'error',
-          text1: 'Weak Password',
-          text2: 'Password does not meet all requirements',
-        });
-        throw new Error('Password does not meet all requirements');
-      }
-      // Placeholder: Implement registration
-      await storeData('@ZaoAPP:Registration', true);
+  // src/screens/Register.js
+const handleRegister = async () => {
+  setIsLoading(true);
+  setFieldErrors({});
+
+  try {
+    console.log('Submitting registration:', formData); // Debug
+    const result = await viewModel.register(formData);
+    
+    if (result.success) {
+      console.log('Registration success, setting isRegistered'); // Debug
       setIsRegistered(true);
       Toast.show({
         type: 'success',
         text1: 'Success',
-        text2: 'Registration successful! Please log in.',
+        text2: 'Registration successful! Please set up your farm details.',
       });
-      navigation.navigate('FarmDetails');
+      navigation.replace('MainTabs');
+    } else {
+      console.log('Registration failed:', result.error); // Debug
+      const errors = result.error.split(': ')[1]?.split(', ') || [result.error];
+      const newFieldErrors = {};
+      
+      errors.forEach(error => {
+        if (error.includes('First name')) newFieldErrors.firstName = error;
+        else if (error.includes('Last name')) newFieldErrors.lastName = error;
+        else if (error.includes('Email') || error.includes('email')) newFieldErrors.email = error;
+        else if (error.includes('phone')) newFieldErrors.phoneNumber = error;
+        else if (error.includes('Password') || error.includes('password')) newFieldErrors.password = error;
+      });
+      
+      setFieldErrors(newFieldErrors);
+      
+      Toast.show({
+        type: 'error',
+        text1: 'Registration Failed',
+        text2: errors[0] || 'Please check your information and try again',
+      });
+    }
+  } catch (error) {
+    console.error('Unexpected registration error:', error.message); // Debug
+    Toast.show({
+      type: 'error',
+      text1: 'Error',
+      text2: error.message.includes('AsyncStorage') 
+        ? 'Storage error. Please try again.'
+        : error.message,
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  const handleSocialRegister = async (provider) => {
+    setIsLoading(true);
+    
+    try {
+      console.log('Social register:', provider); // Debug
+      const result = await viewModel.socialRegister(provider);
+      
+      if (result.success) {
+        setIsRegistered(true);
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: `Registered with ${result.provider}! Please log in.`,
+        });
+        navigation.navigate('Login');
+      } else {
+        console.log('Social registration failed:', result.error); // Debug
+        Toast.show({
+          type: 'error',
+          text1: 'Registration Failed',
+          text2: result.error,
+        });
+      }
     } catch (error) {
-      // Error shown via Toast
+      console.error('Unexpected social registration error:', error); // Debug
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Social registration failed',
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialRegister = (provider) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      storeData('@ZaoAPP:Registration', true);
-      setIsRegistered(true);
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: `Registered with ${provider}! Please log in.`,
-      });
-      navigation.navigate('Login');
-    }, 500);
-  };
-
-  const goToLogin = () => {
-    navigation.navigate('Login');
-  };
-
-  const goToUserAgreement = () => {
-    navigation.navigate('UserAgreement');
-  };
-
-  const goToPrivacyPolicy = () => {
-    navigation.navigate('PrivacyPolicy');
-  };
+  const goToLogin = () => navigation.navigate('Login');
+  const goToUserAgreement = () => navigation.navigate('UserAgreement');
+  const goToPrivacyPolicy = () => navigation.navigate('PrivacyPolicy');
 
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
@@ -128,53 +163,76 @@ const Register = () => {
       </View>
 
       <View style={styles.formContainer}>
+        {/* First Name */}
         <View style={styles.inputWrapper}>
           <StyledText style={styles.inputLabel}>First name</StyledText>
           <StyledTextInput
             placeholder="Enter first name"
-            value={firstName}
-            onChangeText={setFirstName}
-            style={styles.input}
+            value={formData.firstName}
+            onChangeText={(value) => handleFieldChange('firstName', value)}
+            style={[styles.input, fieldErrors.firstName ? styles.inputError : null]}
           />
+          {fieldErrors.firstName && (
+            <StyledText style={styles.errorText}>{fieldErrors.firstName}</StyledText>
+          )}
         </View>
 
+        {/* Last Name */}
         <View style={styles.inputWrapper}>
           <StyledText style={styles.inputLabel}>Last name</StyledText>
           <StyledTextInput
             placeholder="Enter last name"
-            value={lastName}
-            onChangeText={setLastName}
-            style={styles.input}
+            value={formData.lastName}
+            onChangeText={(value) => handleFieldChange('lastName', value)}
+            style={[styles.input, fieldErrors.lastName ? styles.inputError : null]}
           />
+          {fieldErrors.lastName && (
+            <StyledText style={styles.errorText}>{fieldErrors.lastName}</StyledText>
+          )}
         </View>
 
+        {/* Email */}
         <View style={styles.inputWrapper}>
           <StyledText style={styles.inputLabel}>Email address</StyledText>
           <StyledTextInput
             placeholder="Enter email address"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              setEmailError('');
-            }}
+            value={formData.email}
+            onChangeText={(value) => handleFieldChange('email', value)}
             keyboardType="email-address"
             autoCapitalize="none"
-            style={[styles.input, emailError ? styles.inputError : null]}
+            style={[styles.input, fieldErrors.email ? styles.inputError : null]}
           />
-          {emailError ? (
-            <StyledText style={styles.errorText}>{emailError}</StyledText>
-          ) : null}
+          {fieldErrors.email && (
+            <StyledText style={styles.errorText}>{fieldErrors.email}</StyledText>
+          )}
         </View>
 
+        {/* Phone Number */}
+        <View style={styles.inputWrapper}>
+          <StyledText style={styles.inputLabel}>Phone number</StyledText>
+          <StyledTextInput
+            placeholder="Enter phone number (e.g., +254700000000)"
+            value={formData.phoneNumber}
+            onChangeText={(value) => handleFieldChange('phoneNumber', value)}
+            keyboardType="phone-pad"
+            maxLength={12}
+            style={[styles.input, fieldErrors.phoneNumber ? styles.inputError : null]}
+          />
+          {fieldErrors.phoneNumber && (
+            <StyledText style={styles.errorText}>{fieldErrors.phoneNumber}</StyledText>
+          )}
+        </View>
+
+        {/* Password */}
         <View style={styles.inputWrapper}>
           <StyledText style={styles.inputLabel}>Password</StyledText>
           <View style={styles.passwordInputContainer}>
             <StyledTextInput
               placeholder="***********"
-              value={password}
-              onChangeText={setPassword}
+              value={formData.password}
+              onChangeText={(value) => handleFieldChange('password', value)}
               secureTextEntry={!showPassword}
-              style={styles.input}
+              style={[styles.input, fieldErrors.password ? styles.inputError : null]}
             />
             <TouchableOpacity
               style={styles.toggleButton}
@@ -187,24 +245,26 @@ const Register = () => {
               />
             </TouchableOpacity>
           </View>
+          {fieldErrors.password && (
+            <StyledText style={styles.errorText}>{fieldErrors.password}</StyledText>
+          )}
         </View>
 
+        {/* Password Requirements */}
         <View style={styles.passwordRequirements}>
           <StyledText style={styles.requirementText}>Password strength</StyledText>
           <StyledText style={styles.requirementCount}>{`${metRequirementsCount}/5`}</StyledText>
-          {requirements.map(({ label }, index) => (
+          {passwordRequirements.map(({ label, met }, index) => (
             <StyledText
               key={index}
-              style={[
-                styles.requirementItem,
-                requirements[index].test(password) && styles.requirementMet,
-              ]}
+              style={[styles.requirementItem, met && styles.requirementMet]}
             >
               {label}
             </StyledText>
           ))}
         </View>
-
+        
+        {/* Terms */}
         <View style={styles.termsContainer}>
           <StyledText style={styles.termsText}>
             By clicking "Create account", you agree to our{' '}
@@ -220,11 +280,12 @@ const Register = () => {
         </View>
       </View>
 
+      {/* Register Button */}
       <View style={styles.buttonContainer}>
         <StyledButton
           title="Create account"
           onPress={handleRegister}
-          disabled={isLoading || !firstName || !lastName || !email || !password}
+          disabled={isLoading || !isFormValid || !!fieldErrors.phoneNumber}
           style={styles.registerButton}
         />
 
@@ -235,6 +296,7 @@ const Register = () => {
         </View>
       </View>
 
+      {/* Social Buttons */}
       <View style={styles.socialButtonsContainer}>
         <StyledButton
           title="Continue with Google"
@@ -242,6 +304,7 @@ const Register = () => {
           onPress={() => handleSocialRegister('Google')}
           isSocial
           style={styles.socialButton}
+          disabled={isLoading}
         />
         <StyledButton
           title="Continue with Facebook"
@@ -249,6 +312,7 @@ const Register = () => {
           onPress={() => handleSocialRegister('Facebook')}
           isSocial
           style={styles.socialButton}
+          disabled={isLoading}
         />
         <StyledButton
           title="Continue with Apple"
@@ -256,9 +320,11 @@ const Register = () => {
           onPress={() => handleSocialRegister('Apple')}
           isSocial
           style={styles.socialButton}
+          disabled={isLoading}
         />
       </View>
 
+      {/* Login Link */}
       <View style={styles.loginContainer}>
         <StyledText style={styles.loginText}>Already have an account? </StyledText>
         <TouchableOpacity onPress={goToLogin}>
@@ -275,50 +341,17 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: colors.background,
   },
-  // vectorContainer: {
-  //   position: 'absolute',
-  //   width: '100%',
-  //   height: '100%',
-  //   zIndex: -1,
-  // },
-  // vector1: {
-  //   position: 'absolute',
-  //   width: 130,
-  //   height: 128,
-  //   top: 100,
-  //   left: 250,
-  //   opacity: 0.1,
-  //   transform: [{ rotate: '-161.18deg' }],
-  // },
-  // vector2: {
-  //   position: 'absolute',
-  //   width: 200,
-  //   height: 200,
-  //   top: 300,
-  //   left: 200,
-  //   opacity: 0.05,
-  // },
   vectorContainer: {
     position: 'absolute',
     width: '100%',
     height: '100%',
-    zIndex: -1, 
+    zIndex: -1,
   },
-  // vector1: {
-  //   position: 'absolute',
-  //   width: 130.41,
-  //   height: 128.5,
-  //   top: 2065.92,
-  //   left: 272.59,
-  //   transform: [{ rotate: '-161.18deg' }],
-  //   backgroundColor: '#FFCD381A', // 10% opacity
-  // },
   vector2: {
     position: 'absolute',
     width: 200,
     height: 200,
     left: 217,
-    // backgroundColor: '#4CAF500D', // 5% opacity
   },
   header: {
     marginTop: 75,

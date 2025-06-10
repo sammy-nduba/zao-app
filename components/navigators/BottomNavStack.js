@@ -7,11 +7,14 @@ import { useNavigation } from '@react-navigation/native';
 import ConnectScreen from '../../screens/insights/connect/ConnectScreen';
 import LearnScreen from '../../screens/insights/learn/LearnScreen';
 import MarketScreen from '../../screens/insights/market/MarketScreen';
-import AIScreen from '../../screens/insights/ai/AiScreen';
+import {ZaoAIScreen } from '../../screens';
 import HomeStack from './HomeStack';
 
-
 const centralIcon = require('../../assets/insights/cropImage.png');
+
+console.log("ZAOAI", ZaoAIScreen)
+
+
 
 
 export const BottomNavStack = () => {
@@ -101,7 +104,8 @@ export const BottomNavStack = () => {
       <CurvedBottomBar.Screen name="connect" position="LEFT" component={ConnectScreen} options={{ headerShown: false }} />
       <CurvedBottomBar.Screen name="learn" position="LEFT" component={LearnScreen } options={{ headerShown: false }}/>
       <CurvedBottomBar.Screen name="market" position="RIGHT" component={MarketScreen} options={{ headerShown: false }}/>
-      <CurvedBottomBar.Screen name="ai" position="RIGHT" component={AIScreen} options={{ headerShown: false }} />
+      <CurvedBottomBar.Screen name="ai" position="RIGHT" component={ZaoAIScreen} options={{ headerShown: false }} />
+
     </CurvedBottomBar.Navigator>
   );
 };

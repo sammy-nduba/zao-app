@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView,
   StatusBar, TextInput } from 'react-native';
-import { LocalTaskRepository } from '../../config/DataLayer/LocalTaskRepository';
-import { GetTasksUseCase } from '../../config/UseCases/GetTaskUseCase';
-import { GetCalendarEventsUseCase } from '../../config/UseCases/GetCalendarEventsUseCase'
+import { LocalTaskRepository } from '../../domain/repository/dataLayer/LocalTaskRepository';
+import { GetTasksUseCase } from '../../domain/UseCases/homeUseCase/GetTaskUseCase';
+import { GetCalendarEventsUseCase } from '../../domain/UseCases/homeUseCase/GetCalendarEventsUseCase'
  
-
 
 
 
@@ -251,8 +250,6 @@ const MyCropScreen = () => {
         </View>
       </ScrollView>
       
-      {/* <BottomNavBar activeTab={activeTab} onTabPress={setActiveTab} /> */}
-
     </SafeAreaView>
   );
 };

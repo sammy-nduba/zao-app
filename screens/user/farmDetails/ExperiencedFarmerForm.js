@@ -1,58 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { StyledButton, ScrollableMainContainer, CropSelection } from '../../../components';
 import StyledText from '../../../components/Texts/StyledText';
 import StyledTextInput from '../../../components/inputs/StyledTextInput';
 import { colors } from '../../../config/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
-import DatePicker from 'react-native-date-picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
-
-
-
-
-const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
-  const navigation = useNavigation();
+const ExperiencedFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-
-  // Options for different form fields
   const cropOptions = ['Avocado', 'Tomato', 'Maize', 'Cabbage', 'Rice'];
   const farmSizeOptions = ['0-5 acres (Small Scale)', '5-20 acres (Medium Scale)', '20+ acres (Large Scale)'];
   const fertilizerOptions = ['CAN', 'DSP', 'NPK', 'Other'];
-  
 
-  // Load stored form data on mount
-  useEffect(() => {
-    const loadStoredData = async () => {
-      try {
-        const storedData = await AsyncStorage.getItem('@ZaoAPP:ExperiencedFarmerForm');
-        if (storedData) {
-          const parsedData = JSON.parse(storedData);
-          Object.keys(parsedData).forEach((key) => {
-            onFormChange(key, parsedData[key]);
-            if (key === 'lastManure' && parsedData[key]) {
-              // Parse the stored date string back to Date object
-              const dateParts = parsedData[key].split('/');
-              const date = new Date(`${dateParts[2]}-${dateParts[0]}-${dateParts[1]}`);
-              if (!isNaN(date.getTime())) {
-                setSelectedDate(date);
-              }
-            }
-          });
-        }
-      } catch (error) {
-        console.warn('Error loading NewFarmerForm data:', error);
-      }
-    };
-    loadStoredData();
-  }, []);
-
-
-  // Handle crop selection changes
   const handleCropChange = (crop) => {
     const newCrops = formData.selectedCrops.includes(crop)
       ? formData.selectedCrops.filter((item) => item !== crop)
@@ -60,12 +22,8 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
     onFormChange('selectedCrops', newCrops);
   };
 
-  // Handlers for different field types
   const handleOptionSelect = (field, value) => {
     onFormChange(field, value);
-    if (field === 'fertilizer') {
-      onFormChange('fertilizer', value);
-    }
   };
 
   const handleTextInputChange = (field, text) => {
@@ -81,13 +39,11 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
   };
 
   const handleDateChange = (event, date) => {
-    setShowDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
-    
+    setShowDatePicker(Platform.OS === 'ios');
     if (date) {
       setSelectedDate(date);
       const formattedDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
       onFormChange('lastManure', formattedDate);
-      
       Toast.show({
         type: 'success',
         text1: 'Date Selected',
@@ -97,47 +53,25 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
   };
 
   const handleGetStarted = async () => {
-    // Validate required fields
-    const missingFields = [];
-    if (!formData.selectedCrops.length) missingFields.push('crops');
-    if (!formData.farmSize) missingFields.push('farm size');
-    if (!formData.location) missingFields.push('location');
-    if (!formData.cropAge) missingFields.push('crop age');
-    if (!formData.lastManure) missingFields.push('last manure date');
-    if (!formData.fertilizer) missingFields.push('fertilizer');
-    if (!formData.cropPhase) missingFields.push('crop phase');
-
-    if (missingFields.length) {
-      Toast.show({
-        type: 'error',
-        text1: 'Missing Fields',
-        text2: `Please complete: ${missingFields.join(', ')}`,
-      });
-      return;
-    }
-
-    try {
-      // Store form data
-      await AsyncStorage.setItem('@ZaoAPP:ExperiencedFarmerForm', JSON.stringify(formData));
+    const success = await viewModel.submitForm();
+    if (success) {
       Toast.show({
         type: 'success',
         text1: 'Success',
         text2: 'Form submitted! Welcome to your dashboard.',
       });
       navigation.navigate('Login');
-    } catch (error) {
-      console.warn('Error storing ExperiencedFarmerForm data:', error);
+    } else {
       Toast.show({
         type: 'error',
-        text1: 'Storage Error',
-        text2: 'Failed to save form data. Please try again.',
+        text1: 'Error',
+        text2: viewModel.getState().error,
       });
     }
   };
 
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
-      {/* Crop Selection */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>
           What crops are you mostly interested in?
@@ -154,7 +88,6 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
         />
       </View>
 
-      {/* Farm Size Section */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>How many acres do you intend to farm on?</StyledText>
         <StyledTextInput
@@ -179,7 +112,6 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
         </View>
       </View>
 
-      {/* Location Section */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>Where is your farm located?</StyledText>
         <View style={styles.inputContainer}>
@@ -195,7 +127,6 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
         </View>
       </View>
 
-      {/* Crop Age Section */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>What is the age of the oldest crop in your farm?</StyledText>
         <StyledTextInput
@@ -206,7 +137,6 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
         />
       </View>
 
-      {/* Manure Section */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>When was the last time you applied manure?</StyledText>
         <View style={styles.inputContainer}>
@@ -241,7 +171,6 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
         )}
       </View>
 
-      {/* Fertilizer Section */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>Last time fertilizer was applied/sprayed?</StyledText>
         <StyledTextInput
@@ -266,7 +195,6 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
         </View>
       </View>
 
-      {/* Crop Phase Section */}
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>What is the current phase of your crop?</StyledText>
         <StyledTextInput
@@ -277,27 +205,14 @@ const ExperiencedFarmerForm = ({ formData, onFormChange }) => {
         />
       </View>
 
-      {/* Get Started Button */}
       <StyledButton
         title="Get Started"
         onPress={handleGetStarted}
         style={styles.getStartedButton}
+        disabled={viewModel.getState().isLoading}
       />
     </ScrollableMainContainer>
   );
-};
-
-ExperiencedFarmerForm.defaultProps = {
-  formData: {
-    selectedCrops: [],
-    farmSize: '',
-    location: '',
-    cropAge: '',
-    lastManure: '',
-    fertilizer: '',
-    cropPhase: '',
-  },
-  onFormChange: () => {},
 };
 
 const styles = StyleSheet.create({
@@ -337,7 +252,10 @@ const styles = StyleSheet.create({
     color: colors.grey[600],
   },
   locationInput: {
-    paddingRight: 48, // Space for map icon
+    paddingRight: 48,
+  },
+  dateInput: {
+    paddingRight: 48,
   },
   iconButton: {
     position: 'absolute',

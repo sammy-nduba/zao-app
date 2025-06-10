@@ -1,42 +1,31 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { onBoardingData } from '../config/data';
+import { onBoardingData } from '../config/onBoardingData';
 import StyledText from '../components/Texts/StyledText';
 import { colors } from '../config/theme';
 import { ScreenWidth } from '../config/constants';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { storeData } from '../utils/storage';
-import { onBoardingContext } from '../utils/context';
-
+import { AuthContext } from '../utils/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const Welcome = ({ route }) => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [activeScreen, setActiveScreen] = useState(route.params?.activeScreen || 1);
   const [completingOnboarding, setCompletingOnboarding] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
-  const { setIsZaoAppOnboarded } = useContext(onBoardingContext);
+  const { setIsZaoAppOnboarded } = useContext(AuthContext);
   const onLastScreen = activeScreen === onBoardingData.length;
-
-  useEffect(() => {
-    onBoardingData.forEach((item) => {
-      if (item.image?.uri) {
-        Image.prefetch(item.image.uri).catch((err) => console.error('Prefetch failed:', err));
-      }
-    });
-  }, []);
 
   const completeOnboarding = async () => {
     try {
       setCompletingOnboarding(true);
-      await storeData('@ZaoAPP:Onboarding', true);
-      setTimeout(() => {
-        setIsZaoAppOnboarded(true);
-        setCompletingOnboarding(false);
-        navigation.navigate('Auth');
-      }, 500);
+      await setIsZaoAppOnboarded(true);
+      navigation.replace('Auth'); // To Prevent back navigation
     } catch (error) {
-      console.warn(error);
+      console.warn('Error completing onboarding:', error);
+    } finally {
       setCompletingOnboarding(false);
     }
   };
@@ -49,9 +38,10 @@ const Welcome = ({ route }) => {
     }
   };
 
-  const currentImage = onBoardingData[activeScreen - 1]?.image;
-  if (!currentImage) {
-    console.error(`Image undefined for activeScreen: ${activeScreen}`);
+  const currentItem = onBoardingData[activeScreen - 1];
+  if (!currentItem) {
+    console.error(`Data undefined for activeScreen: ${activeScreen}`);
+    return null;
   }
 
   return (
@@ -59,24 +49,23 @@ const Welcome = ({ route }) => {
       <View style={styles.imageView}>
         {imageLoading && <ActivityIndicator size="large" color={colors.primary[600]} />}
         <Image
-          source={currentImage }
+          source={imageLoading ? currentItem.placeholder : currentItem.image}
           style={styles.image}
           resizeMode="contain"
           onLoadStart={() => setImageLoading(true)}
           onLoadEnd={() => setImageLoading(false)}
-          onError={() => console.error(`Failed to load image for screen ${activeScreen}`)}
+          onError={() => {
+            console.error(`Failed to load image for screen ${activeScreen}`);
+            setImageLoading(false);
+          }}
         />
         <TouchableOpacity style={styles.skipButton} onPress={completeOnboarding}>
-          <StyledText style={styles.skipText}>Skip</StyledText>
+          <StyledText style={styles.skipText}>{t('common.skip')}</StyledText>
         </TouchableOpacity>
       </View>
       <View style={styles.contentCard}>
-        <StyledText style={styles.title}>
-          {onBoardingData[activeScreen - 1]?.title || 'No Title'}
-        </StyledText>
-        <StyledText style={styles.summary}>
-          {onBoardingData[activeScreen - 1]?.summary || 'No Summary'}
-        </StyledText>
+        <StyledText style={styles.title}>{t(currentItem.title)}</StyledText>
+        <StyledText style={styles.summary}>{t(currentItem.summary)}</StyledText>
       </View>
       <View style={styles.bottomContent}>
         <View style={styles.pageIndicators}>
@@ -99,7 +88,7 @@ const Welcome = ({ route }) => {
           onPress={handleNext}
         >
           {onLastScreen ? (
-            <StyledText style={styles.getStartedText}>Get Started</StyledText>
+            <StyledText style={styles.getStartedText}>{t('welcome.get_started')}</StyledText>
           ) : (
             <Feather name="arrow-right" size={24} color="black" />
           )}
@@ -118,6 +107,7 @@ const styles = StyleSheet.create({
     height: '55%',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   image: {
     // width: ScreenWidth,
@@ -126,17 +116,13 @@ const styles = StyleSheet.create({
   skipButton: {
     position: 'absolute',
     top: 48,
-    left: ScreenWidth - 120,
+    right: 20,
     width: 100,
     height: 48,
     borderRadius: 32,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 12,
-    paddingLeft: 20,
-    paddingRight: 20,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -198,14 +184,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary[600],
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 3,
   },
   getStartedButton: {
-    width: 120,
+    width: 140,
     height: 56,
     borderRadius: 32,
   },

@@ -1,11 +1,8 @@
-
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import Home from '../../screens/Home';
 import MyCropScreen from '../../screens/insights/MyCropScreen';
-import { ConnectScreen, LearnScreen, MarketScreen, AIScreen } from '../../screens';
-import BottomNavStack from './BottomNavStack';
-
+import LatestNewsScreen from '../../screens/zaoNews/LatestNewsScreen';
 
 const Stack = createStackNavigator();
 
@@ -13,17 +10,8 @@ const HomeStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={Home} />
-      
-      <Stack.Screen name = "Connect" component= {ConnectScreen} />
-
-      <Stack.Screen name = "Learn" component= {LearnScreen} />
-
-      <Stack.Screen name = "Market" component= {MarketScreen} />
-
-      <Stack.Screen name = "AI" component= {AIScreen} />
-
       <Stack.Screen name="MyCropScreen" component={MyCropScreen} />
-
+      <Stack.Screen name="LatestNewsScreen" component={LatestNewsScreen} options={{ title: 'Latest News' }} />
     </Stack.Navigator>
   );
 };

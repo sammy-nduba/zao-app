@@ -1,34 +1,68 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StyledButton } from '../../components';
 import StyledText from '../../components/Texts/StyledText';
+import { AuthContext } from '../../utils/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../config/theme';
 
 const ErrorScreen = ({ navigation, route }) => {
-  // Get error from route params or use default
-  const error = route?.params?.error || 'An unexpected error occurred';
-  
-  // Proper reload function for React Native
-  const handleReload = () => {
-    // Option 1: Reset navigation to initial route
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'InitialRoute' }], // Replace with your initial route name
-    });
+  const { t } = useTranslation();
+  const { authState, setIsLoading, setAuthError, initialize } = useContext(AuthContext);
+  const error = route?.params?.error || t('error.default');
 
-    // Option 2: If using context/state to track errors, reset the error state
-    // resetErrorState(); // You would need to implement this
+  const handleReload = async () => {
+    console.log('ErrorScreen: handleReload called', { authState, error });
+    setIsLoading(true);
+    try {
+      // Re-initialize AuthViewModel
+      await initialize(); // Assumes initialize is exposed in AuthContext
+      console.log('ErrorScreen: Auth initialized, new state:', authState);
 
-    // Option 3: If the error is recoverable, navigate back
-    // navigation.goBack();
+      // Clear authError
+      setAuthError(null);
+
+      // Determine initial route
+      let initialRoute = 'Onboarding';
+      if (authState.isZaoAppOnboarded === false) {
+        initialRoute = 'Onboarding';
+      } else if (authState.isLoggedIn) {
+        initialRoute = 'MainTabs';
+      } else {
+        initialRoute = 'Auth';
+      }
+      console.log('ErrorScreen: Resetting to route:', initialRoute);
+
+      // Reset navigation
+      navigation.reset({
+        index: 0,
+        routes: [{ name: initialRoute }],
+      });
+    } catch (err) {
+      console.error('ErrorScreen: Reload failed:', err);
+      navigation.setParams({ error: t('error.reloadFailed', { message: err.message }) });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <StyledText style={styles.title}>Something Went Wrong</StyledText>
+
+<View style={styles.vectorContainer}>
+        <Image 
+          source={require('../../assets/Vector1.png')} 
+          style={styles.vector1}
+        />
+        <Image 
+          source={require('../../assets/Vector.png')} 
+          style={styles.vector2}
+        />
+      </View>
+      <StyledText style={styles.title}>{t('error.title')}</StyledText>
       <StyledText style={styles.message}>{error}</StyledText>
       <StyledButton
-        title="Try Again"
+        title={t('error.tryAgain')}
         onPress={handleReload}
         style={styles.button}
       />
@@ -46,7 +80,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Roboto',
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: colors.grey[600],
     marginBottom: 16,

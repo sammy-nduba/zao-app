@@ -1,3 +1,4 @@
+// src/screens/Home.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -6,7 +7,8 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
-  TouchableOpacity
+  TouchableOpacity,
+  Image
 } from 'react-native';
 import { colors } from '../config/theme';
 import { useNavigation } from '@react-navigation/native';
@@ -53,7 +55,7 @@ const Home = () => {
 
   const handleCategoryChange = (category) => {
     console.log('Home.js: Changing news category:', category);
-    viewModel.setCategory(category);
+    viewModel.setSelectedNewsCategory(category);
     setState(viewModel.getState());
   };
 
@@ -67,20 +69,29 @@ const Home = () => {
     );
   }
 
+  console.log('Home.js: Rendering with state:', state); // Debug
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {state.error && <Text style={styles.errorText}>Error: {state.error}</Text>}
-        <GreetingAndWeatherSection weatherData={state.weatherData} />
-        <WeatherForecast weatherData={state.weatherData} />
+        <GreetingAndWeatherSection weatherData={state.weatherData || { current: null, forecast: [] }} />
+        <WeatherForecast weatherData={state.weatherData || { current: null, forecast: [] }} />
+        <View style={styles.vectorContainer}>
+        <Image source={require('../assets/Vector1.png')} style={styles.vector1} />
+        <Image source={require('../assets/Vector.png')} style={styles.vector2} />
+      </View>
         {state.dashboardData?.alerts?.length ? (
           state.dashboardData.alerts.map((alert) => (
             <AlertCard key={alert.id} alert={alert} />
+            
           ))
         ) : (
+          
           <Text style={styles.noDataText}>No alerts available</Text>
         )}
+        
         {state.dashboardData?.cropData ? (
           <CropSummary
             cropData={state.dashboardData.cropData}
@@ -90,26 +101,24 @@ const Home = () => {
           <Text style={styles.noDataText}>No crop data available</Text>
         )}
         <NewsSection
-          newsData={state.newsData}
-          selectedCategory={state.selectedNewsCategory}
+          newsData={Array.isArray(state.newsData) ? state.newsData : []}
+          selectedCategory={state.selectedNewsCategory || 'kenya'}
           onCategoryChange={handleCategoryChange}
         />
         <TouchableOpacity
-  style={styles.seeAllButton}
-  onPress={() =>
-    navigation.navigate('MainTabs', {
-      screen: 'HomeStack',
-      params: {
-        screen: 'LatestNewsScreen',
-        params: { category: state.selectedNewsCategory },
-      },
-    })
-  }
->
-  <Text style={styles.seeAllText}>See All</Text>
-</TouchableOpacity>
-
-        
+          style={styles.seeAllButton}
+          onPress={() =>
+            navigation.navigate('MainTabs', {
+              screen: 'HomeStack',
+              params: {
+                screen: 'LatestNewsScreen',
+                params: { category: state.selectedNewsCategory || 'kenya' },
+              },
+            })
+          }
+        >
+          <Text style={styles.seeAllText}>See All</Text>
+        </TouchableOpacity>
         <View style={styles.bottomPadding} />
       </ScrollView>
     </SafeAreaView>
@@ -120,6 +129,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.primary,
+  },
+  vectorContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    zIndex: -1,
+    marginTop: 400
+  },
+  // vector1: {
+  //   position: 'absolute',
+  //   width: 130,
+  //   height: 128,
+  //   top: 100,
+  //   left: 250,
+  //   opacity: 0.1,
+  //   transform: [{ rotate: '-161.18deg' }],
+  // },
+  vector2: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    top: 300,
+    left: 200,
+    opacity: 0.05,
   },
   loadingContainer: {
     flex: 1,

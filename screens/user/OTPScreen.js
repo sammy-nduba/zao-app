@@ -100,7 +100,7 @@ const OTPScreen = () => {
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
       <View style={styles.vectorContainer}>
-        <Image source={require('../../assets/Vector 1.png')} style={styles.vector1} />
+        <Image source={require('../../assets/Vector1.png')} style={styles.vector1} />
         <Image source={require('../../assets/Vector.png')} style={styles.vector2} />
       </View>
 
@@ -169,15 +169,15 @@ const styles = StyleSheet.create({
     height: '100%',
     zIndex: -1,
   },
-  vector1: {
-    position: 'absolute',
-    width: 130,
-    height: 128,
-    top: 100,
-    left: 250,
-    opacity: 0.1,
-    transform: [{ rotate: '-161.18deg' }],
-  },
+  // vector1: {
+  //   position: 'absolute',
+  //   width: 130,
+  //   height: 128,
+  //   top: 100,
+  //   left: 250,
+  //   opacity: 0.1,
+  //   transform: [{ rotate: '-161.18deg' }],
+  // },
   vector2: {
     position: 'absolute',
     width: 200,

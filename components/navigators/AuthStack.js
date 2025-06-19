@@ -1,4 +1,3 @@
-// src/navigation/AuthStack.js
 import React from 'react';
 import {
   FarmDetails,
@@ -16,6 +15,7 @@ const Stack = createStackNavigator();
 const AuthStack = () => {
   return (
     <Stack.Navigator initialRouteName="Register" screenOptions={{ headerShown: false }}>
+      
       <Stack.Screen name="Register" component={Register} />
       <Stack.Screen name="FarmDetails" component={FarmDetails} />
       <Stack.Screen name="NewFarmerForm" component={NewFarmerForm} />

@@ -34,7 +34,7 @@ export class Container {
 
   registerDependencies() {
     // Api Clients
-    this.dependencies.set('weatherApiClient', new ApiClient('http://api.weatherapi.com/v1'));
+    this.dependencies.set('weatherApiClient', new ApiClient('https://api.weatherapi.com/v1'));
     this.dependencies.set('newsApiClient', new ApiClient('https://newsapi.org/v2'));
     this.dependencies.set('appApiClient', new ApiClient('https://your-api-base-url.com'));
 

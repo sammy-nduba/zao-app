@@ -54,5 +54,15 @@
   "login": {
     "title": "Entrar",
     "submit": "Login"
+  },
+  "update": {
+    "title": "Atualização Disponível",
+    "message": "Uma nova versão ({version}) do ZaoApp está disponível.",
+    "mandatory_message": "A versão {version} do ZaoApp é necessária para continuar.",
+    "release_notes": "Novidades",
+    "now": "Atualizar Agora",
+    "later": "Atualizar Mais Tarde",
+    "required": "Atualização Necessária",
+    "required_message": "Por favor, atualize para continuar usando o ZaoApp."
   }
 }

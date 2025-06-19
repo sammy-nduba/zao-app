@@ -8,9 +8,9 @@ export { default as FarmDetails } from './user/farmDetails/FarmDetails';
 export { default as NewFarmerForm } from './user/farmDetails/NewFarmerForm';
 export { default as ExperiencedFarmerForm } from './user/farmDetails/ExperiencedFarmerForm';
 export { default as ConnectScreen } from './insights/connect/ConnectScreen';
-export { default as LearnScreen } from './insights/learn/LearnScreen';
+// export { default as LearnScreen } from './insights/learn/LearnScreen';
 export { default as MarketScreen } from './insights/market/MarketScreen'; 
-export { default as ZaoAIScreen } from './ZaoAIScreen/ZaoAIScreen';
+// export { default as ZaoAIScreen } from './ZaoAIScreen/ZaoAIScreen';
 
 
 // console.log("User Index:", Register, FarmDetails)

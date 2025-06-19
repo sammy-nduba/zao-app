@@ -54,5 +54,15 @@
   "login": {
     "title": "Iniciar Sesión",
     "submit": "Iniciar Sesión"
+  },
+  "update": {
+    "title": "Actualización Disponible",
+    "message": "Una nueva versión ({version}) de ZaoApp está disponible.",
+    "mandatory_message": "Se requiere la versión {version} de ZaoApp para continuar.",
+    "release_notes": "Novedades",
+    "now": "Actualizar Ahora",
+    "later": "Actualizar Más Tarde",
+    "required": "Actualización Requerida",
+    "required_message": "Por favor, actualiza para seguir usando ZaoApp."
   }
 }

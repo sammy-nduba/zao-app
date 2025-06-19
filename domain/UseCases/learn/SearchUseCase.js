@@ -1,3 +1,4 @@
+
 export class SearchUseCase {
     constructor(searchRepository) {
       this.searchRepository = searchRepository;

@@ -1,3 +1,6 @@
+import { SearchItem } from "domain/entities/zaoLearn/SearchItem";
+
+
 export class SearchRepository {
     async search(query) {
       const items = [

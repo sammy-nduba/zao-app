@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     backgroundColor: colors.primary[600],
     marginTop: 16,
-    marginBottom: 40,
+    marginBottom: 80,
     alignSelf: 'center',
   },
 });

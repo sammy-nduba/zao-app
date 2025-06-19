@@ -1,3 +1,6 @@
+
+
+
 export class CommunityPost {
     constructor(id, author, avatar, content, likes = 0, comments = 0) {
       this.id = id;

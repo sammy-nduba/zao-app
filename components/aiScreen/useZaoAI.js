@@ -4,7 +4,6 @@ export const useZaoAI = () => {
   const [searchText, setSearchText] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const [chatInput, setChatInput] = useState('');
-  const [bottomNavTab, setBottomNavTab] = useState(4); // AI tab active
 
   const capabilities = [
     {
@@ -61,8 +60,6 @@ export const useZaoAI = () => {
     setActiveTab,
     chatInput,
     setChatInput,
-    bottomNavTab,
-    setBottomNavTab,
     capabilities,
     tabs,
     handleBackPress,

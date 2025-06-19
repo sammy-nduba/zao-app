@@ -54,5 +54,15 @@
   "login": {
     "title": "Ingia",
     "submit": "Ingia"
+  },
+  "update": {
+    "title": "Sasisho Linapatikana",
+    "message": "Toleo jipya ({version}) la ZaoApp linapatikana.",
+    "mandatory_message": "Toleo {version} la ZaoApp linahitajika ili kuendelea.",
+    "release_notes": "Mpya ni Nini",
+    "now": "Sasisha Sasa",
+    "later": "Sasisha Baadaye",
+    "required": "Sasisho Linahitajika",
+    "required_message": "Tafadhali sasisha ili uendelee kutumia ZaoApp."
   }
 }

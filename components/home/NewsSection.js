@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList } from 'react
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../config/theme';
 
-const NewsSection = ({ newsData, selectedCategory, onCategoryChange }) => {
+const NewsSection = ({ newsData = [], selectedCategory, onCategoryChange }) => {
   const navigation = useNavigation();
   console.log('NewsSection.js newsData:', newsData); // Debug
 
@@ -59,23 +59,17 @@ const NewsSection = ({ newsData, selectedCategory, onCategoryChange }) => {
         ))}
       </View>
       <FlatList
-        data={newsData.slice(0, 3)} // Limit to 2 articles
+        data={Array.isArray(newsData) ? newsData.slice(0, 3) : []} // Guard against undefined
         renderItem={renderItem}
         keyExtractor={(item, index) => `${item.id || index}`}
         style={styles.newsList}
-        nestedScrollEnabled // Enable independent scrolling
+        nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={() => (
           <Text style={styles.noDataText}>No news available</Text>
         )}
         contentContainerStyle={styles.newsListContent}
       />
-      {/* <TouchableOpacity
-        style={styles.seeAllButton}
-        onPress={() => navigation.navigate('LatestNewsScreen', { category: selectedCategory })}
-      >
-        <Text style={styles.seeAllText}>See All</Text>
-      </TouchableOpacity> */}
     </View>
   );
 };

@@ -3,24 +3,35 @@ export class GetWeatherUseCase {
     this.weatherRepository = weatherRepository;
   }
 
-  async execute() {
-    console.log('GetWeatherUseCase.execute called'); 
-    try {
-      const results = await Promise.allSettled([
-        this.weatherRepository.getCurrentWeather(),
-        this.weatherRepository.getWeatherForecast(),
-      ]);
-      console.log('GetWeatherUseCase results:', results);
+  async execute(location = 'Nairobi') {
+    console.log('GetWeatherUseCase.execute called', { location });
+    const results = await Promise.allSettled([
+      this.weatherRepository.getCurrentWeather(location),
+      this.weatherRepository.getWeatherForecast(location),
+    ]);
+    console.log('GetWeatherUseCase results:', results);
 
-      const [currentResult, forecastResult] = results;
-      const current = currentResult.status === 'fulfilled' ? currentResult.value : null;
-      const forecast = forecastResult.status === 'fulfilled' ? forecastResult.value : [];
+    const [currentResult, forecastResult] = results;
+    const current = currentResult.status === 'fulfilled' ? currentResult.value : null;
+    const forecast = forecastResult.status === 'fulfilled' ? forecastResult.value : [];
 
-      console.log('GetWeatherUseCase result:', { current, forecast });
-      return { current, forecast };
-    } catch (error) {
-      console.error('GetWeatherUseCase error:', error); 
-      return { current: null, forecast: [] };
+    if (currentResult.status === 'rejected' || forecastResult.status === 'rejected') {
+      const error = currentResult.status === 'rejected' 
+        ? currentResult.reason 
+        : forecastResult.reason;
+      console.error('GetWeatherUseCase error:', {
+        message: error.message,
+        stack: error.stack,
+      });
     }
+
+    console.log('GetWeatherUseCase result:', { current, forecast });
+    return { 
+      current, 
+      forecast, 
+      error: currentResult.status === 'rejected' || forecastResult.status === 'rejected' 
+        ? error.message 
+        : null 
+    };
   }
 }

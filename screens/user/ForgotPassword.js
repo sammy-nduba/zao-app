@@ -61,7 +61,7 @@ const ForgotPassword = () => {
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
       <View style={styles.vectorContainer}>
-        <Image source={require('../../assets/Vector 1.png')} style={styles.vector1} />
+        <Image source={require('../../assets/Vector1.png')} style={styles.vector1} />
         <Image source={require('../../assets/Vector.png')} style={styles.vector2} />
       </View>
 

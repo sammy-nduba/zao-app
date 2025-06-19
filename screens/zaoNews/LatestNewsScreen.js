@@ -7,7 +7,7 @@ import {
   StyleSheet,
   SafeAreaView,
   FlatList,
-  ActivityIndicator,
+  ActivityIndicator, Image
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import container from '../../infrastructure/di/Container';
@@ -131,6 +131,10 @@ const LatestNewsScreen = ({ navigation, route }) => {
   if (state.loading && state.newsData.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.vectorContainer}>
+        <Image source={require('../../assets/Vector1.png')} style={styles.vector1} />
+        <Image source={require('../../assets/Vector.png')} style={styles.vector2} />
+      </View>
         <Header
           title="Latest News"
           onBack={handleBack}
@@ -199,6 +203,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  vectorContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    zIndex: -1,
+  },
+  // vector1: {
+  //   position: 'absolute',
+  //   width: 130,
+  //   height: 128,
+  //   top: 100,
+  //   left: 250,
+  //   opacity: 0.1,
+  //   transform: [{ rotate: '-161.18deg' }],
+  // },
+  vector2: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    top: 300,
+    left: 200,
+    opacity: 0.05,
   },
   loadingContainer: {
     flex: 1,

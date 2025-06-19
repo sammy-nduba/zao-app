@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView,
-  StatusBar, TextInput } from 'react-native';
+  StatusBar, TextInput, Image } from 'react-native';
 import { LocalTaskRepository } from '../../domain/repository/dataLayer/LocalTaskRepository';
 import { GetTasksUseCase } from '../../domain/UseCases/homeUseCase/GetTaskUseCase';
 import { GetCalendarEventsUseCase } from '../../domain/UseCases/homeUseCase/GetCalendarEventsUseCase'
@@ -111,6 +111,9 @@ const Calendar = ({ events }) => {
   
   return (
     <View style={styles.calendarContainer}>
+      <View style={styles.vectorContainer}>
+        <Image source={require('../../assets/Vector_leaf.png')} style={styles.vector1} />
+      </View>
       <View style={styles.calendarHeader}>
         <Text style={styles.monthText}>July 2025</Text>
       </View>
@@ -162,6 +165,9 @@ const TaskItem = ({ task }) => {
 // Legend Component
 const Legend = () => (
   <View style={styles.legendContainer}>
+    <View style={styles.vectorContainer}>
+        <Image source={require('../../assets/Vector_openLeaf.png')} style={styles.vector1} />
+      </View>
     <View style={styles.legendItem}>
       <View style={[styles.legendDot, styles.legendDotCompleted]} />
       <Text style={styles.legendText}>Conduct Soil Test</Text>
@@ -259,6 +265,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
+  vectorContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    zIndex: -1,
+  },
+  // vector1: {
+  //   position: 'absolute',
+  //   width: 130,
+  //   height: 128,
+  //   top: 100,
+  //   left: 250,
+  //   opacity: 0.1,
+  //   transform: [{ rotate: '-161.18deg' }],
+  // },
+  vector2: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    top: 300,
+    left: 200,
+    opacity: 0.05,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -271,6 +300,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     backgroundColor: '#f8f9fa',
+    marginTop: 20
   },
   backButton: {
     padding: 5,

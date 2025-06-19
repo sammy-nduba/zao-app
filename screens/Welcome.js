@@ -50,6 +50,8 @@ const Welcome = ({ route }) => {
         {imageLoading && <ActivityIndicator size="large" color={colors.primary[600]} />}
         <Image
           source={imageLoading ? currentItem.placeholder : currentItem.image}
+          // source={currentItem.image}
+
           style={styles.image}
           resizeMode="contain"
           onLoadStart={() => setImageLoading(true)}

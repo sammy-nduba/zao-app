@@ -112,7 +112,7 @@ const Login = () => {
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
       <View style={styles.vectorContainer}>
-        <Image source={require('../../assets/Vector 1.png')} style={styles.vector1} />
+        <Image source={require('../../assets/Vector1.png')} style={styles.vector1} />
         <Image source={require('../../assets/Vector.png')} style={styles.vector2} />
       </View>
 
@@ -197,14 +197,14 @@ const Login = () => {
         />
         <StyledButton
           title="Continue with Facebook"
-          icon="facebook"
+          icon="facebook2"
           onPress={() => handleSocialLogin('Facebook')}
           isSocial
           style={styles.socialButton}
         />
         <StyledButton
           title="Continue with Apple"
-          icon="apple"
+          icon="apple1"
           onPress={() => handleSocialLogin('Apple')}
           isSocial
           style={styles.socialButton}
@@ -233,14 +233,14 @@ const styles = StyleSheet.create({
     height: '100%',
     zIndex: -1,
   },
-  vector1: {
-    position: 'absolute',
-    width: 130.41,
-    height: 128.5,
-    top: 2065.92,
-    left: 272.59,
-    transform: [{ rotate: '-161.18deg' }],
-  },
+  // vector1: {
+  //   position: 'absolute',
+  //   width: 130.41,
+  //   height: 128.5,
+  //   top: 2065.92,
+  //   left: 272.59,
+  //   transform: [{ rotate: '-161.18deg' }],
+  // },
   vector2: {
     position: 'absolute',
     width: 200,

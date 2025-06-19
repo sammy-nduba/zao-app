@@ -54,5 +54,15 @@
   "login": {
     "title": "Se Connecter",
     "submit": "Connexion"
+  },
+  "update": {
+    "title": "Mise à jour Disponible",
+    "message": "Une nouvelle version ({version}) de ZaoApp est disponible.",
+    "mandatory_message": "La version {version} de ZaoApp est requise pour continuer.",
+    "release_notes": "Nouveautés",
+    "now": "Mettre à jour Maintenant",
+    "later": "Mettre à jour Plus Tard",
+    "required": "Mise à jour Requise",
+    "required_message": "Veuillez mettre à jour pour continuer à utiliser ZaoApp."
   }
 }

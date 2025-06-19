@@ -5,10 +5,12 @@ import { CurvedBottomBar } from 'react-native-curved-bottom-bar';
 import { colors, spacing } from '../../config/theme';
 import { useNavigation } from '@react-navigation/native';
 import ConnectScreen from '../../screens/insights/connect/ConnectScreen';
-import LearnScreen from '../../screens/insights/learn/LearnScreen';
+import ZaoLearnScreen from '../../screens/zaoLearn/ZaoLearnScreen';
 import MarketScreen from '../../screens/insights/market/MarketScreen';
-import {ZaoAIScreen } from '../../screens';
+import {ZaoAIScreen}  from '../../screens/ZaoAIScreen/ZaoAIScreen';
 import HomeStack from './HomeStack';
+
+
 
 const centralIcon = require('../../assets/insights/cropImage.png');
 
@@ -102,7 +104,7 @@ export const BottomNavStack = () => {
       tabBar={renderTabBar}>
       <CurvedBottomBar.Screen name="HomeStack" component={HomeStack} position="CENTER"/>
       <CurvedBottomBar.Screen name="connect" position="LEFT" component={ConnectScreen} options={{ headerShown: false }} />
-      <CurvedBottomBar.Screen name="learn" position="LEFT" component={LearnScreen } options={{ headerShown: false }}/>
+      <CurvedBottomBar.Screen name="learn" position="LEFT" component={ZaoLearnScreen } options={{ headerShown: false }}/>
       <CurvedBottomBar.Screen name="market" position="RIGHT" component={MarketScreen} options={{ headerShown: false }}/>
       <CurvedBottomBar.Screen name="ai" position="RIGHT" component={ZaoAIScreen} options={{ headerShown: false }} />
 

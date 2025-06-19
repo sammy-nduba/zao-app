@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { styles } from '../../config/styles/ZaoAIStyles';
 
 export const SearchBar = ({ value, onChangeText, onFilterPress, placeholder }) => {
   return (
@@ -23,3 +22,31 @@ export const SearchBar = ({ value, onChangeText, onFilterPress, placeholder }) =
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'white',
+  },
+  searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 25,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginRight: 12,
+    flex: 1,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    marginLeft: 8,
+    color: '#6B7280',
+  },
+  filterButton: {
+    padding: 8,
+  },
+})

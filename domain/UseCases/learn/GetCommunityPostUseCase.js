@@ -1,3 +1,6 @@
+
+
+
 export class GetCommunityPostsUseCase {
     constructor(communityRepository) {
       this.communityRepository = communityRepository;

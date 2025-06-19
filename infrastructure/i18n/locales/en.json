@@ -55,5 +55,23 @@
   "login": {
     "title": "Sign In",
     "submit": "Login"
-  }
+  },
+  "update": {
+    "title": "Update Available",
+    "message": "A new version ({version}) of ZaoApp is available.",
+    "mandatory_message": "ZaoApp version {version} is required to continue.",
+    "release_notes": "What's New",
+    "now": "Update Now",
+    "later": "Update Later",
+    "required": "Update Required",
+    "required_message": "Please update to continue using ZaoApp."
+  },
+
+    "error": {
+      "title": "Something Went Wrong",
+    "default": "An unexpected error occurred",
+    "tryAgain": "Try Again",
+    "reloadFailed": "Reload failed: {{message}}"
+    }
+  
 }

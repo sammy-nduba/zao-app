@@ -1,31 +1,31 @@
-import axios from 'axios';
-
 export class ApiClient {
-  constructor(baseURL, apiKey = '') {
-    this.client = axios.create({
-      baseURL,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(apiKey && { 'X-Api-Key': apiKey }),
-      },
-    });
+  constructor(baseURL) {
+    this.baseURL = baseURL;
   }
 
-  async get(url) {
-    try {
-      const response = await this.client.get(url);
-      return response.data;
-    } catch (error) {
-      throw new Error(`API GET error: ${error.message}`);
+  async get(endpoint, config = {}) {
+    const url = new URL(`${this.baseURL}${endpoint}`);
+    if (config.params) {
+      Object.keys(config.params).forEach((key) =>
+        url.searchParams.append(key, config.params[key])
+      );
     }
-  }
-
-  async post(url, data) {
     try {
-      const response = await this.client.post(url, data);
-      return response.data;
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+        error.response = { data: errorData, status: response.status };
+        throw error;
+      }
+      return { data: await response.json() };
     } catch (error) {
-      throw new Error(`API POST error: ${error.message}`);
+      throw error;
     }
   }
 }

@@ -10,14 +10,30 @@ import {
     StyleSheet,
     SafeAreaView,
   } from 'react-native';
+  import Header  from 'components/newsComponents/Header';
+  import  SearchBar from 'components/newsComponents/SearchBar';
+  import  { CourseCard } from 'components/zaoLearn/CourseCard'
+  import {TabNavigation} from 'components/zaoLearn/TabNavigation';
+import { CourseRepository } from 'domain/repository/learn/CoursesRepository';
+import { SearchRepository } from 'domain/repository/learn/SearchRepository';
+import { CommunityRepository } from 'domain/repository/learn/CommunityRepository'
+import { GetCommunityPostsUseCase } from 'domain/UseCases/learn/GetCommunityPostUseCase';
+import { GetCoursesUseCase } from 'domain/UseCases/learn/GetCoursesUseCase';
+import { SearchUseCase } from 'domain/UseCases/learn/SearchUseCase';
+import { SearchItem } from 'components/zaoLearn/SearchItem';
+import { CommunityPost } from 'components/zaoLearn/CommunityPost';
+import { Course } from 'domain/entities/zaoLearn/Course';
+
+
+console.log("ZAO learn", CommunityRepository)
   
   // Dependency Injection Container
   class DIContainer {
     constructor() {
       // Repositories
-      this.courseRepository = new CourseRepository();
-      this.communityRepository = new CommunityRepository();
-      this.searchRepository = new SearchRepository();
+      this.courseRepository = new CourseRepository;
+      this.communityRepository = new CommunityRepository;
+      this.searchRepository = new SearchRepository;
       
       // Use Cases
       this.getCoursesUseCase = new GetCoursesUseCase(this.courseRepository);
@@ -27,106 +43,6 @@ import {
   }
   
   const container = new DIContainer();
-  
-  // UI Components
-  const Header = ({ title, onBack, onNotification }) => (
-    <View style={styles.header}>
-      <TouchableOpacity onPress={onBack} style={styles.backButton}>
-        <Text style={styles.backArrow}>←</Text>
-      </TouchableOpacity>
-      <Text style={styles.headerTitle}>{title}</Text>
-      <TouchableOpacity onPress={onNotification} style={styles.notificationButton}>
-        <Text style={styles.notificationIcon}>🔔</Text>
-      </TouchableOpacity>
-    </View>
-  );
-  
-  const SearchBar = ({ value, onChangeText, placeholder }) => (
-    <View style={styles.searchContainer}>
-      <Text style={styles.searchIcon}>🔍</Text>
-      <TextInput
-        style={styles.searchInput}
-        placeholder={placeholder}
-        value={value}
-        onChangeText={onChangeText}
-        placeholderTextColor="#999"
-      />
-      <TouchableOpacity style={styles.filterButton}>
-        <Text style={styles.filterIcon}>⚙️</Text>
-      </TouchableOpacity>
-    </View>
-  );
-  
-  const TabNavigation = ({ activeTab, onTabChange }) => {
-    const tabs = ['Courses', 'My Learning', 'Certificates'];
-    
-    return (
-      <View style={styles.tabContainer}>
-        {tabs.map((tab, index) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tab, activeTab === index && styles.activeTab]}
-            onPress={() => onTabChange(index)}
-          >
-            <Text style={[
-              styles.tabText,
-              activeTab === index && styles.activeTabText
-            ]}>
-              {tab}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  };
-  
-  const CourseCard = ({ course, onPress }) => (
-    <TouchableOpacity style={styles.courseCard} onPress={() => onPress(course)}>
-      <View style={styles.courseContent}>
-        <Text style={styles.courseEmoji}>🌱</Text>
-        <Text style={styles.courseTitle}>{course.title}</Text>
-        <TouchableOpacity style={styles.learnButton}>
-          <Text style={styles.learnButtonText}>Learn More →</Text>
-        </TouchableOpacity>
-      </View>
-      <Text style={styles.courseIcon}>📊</Text>
-    </TouchableOpacity>
-  );
-  
-  const SearchItem = ({ item, onPress }) => (
-    <TouchableOpacity style={styles.searchItem} onPress={() => onPress(item)}>
-      <View style={styles.searchItemIcon}>
-        <Text>{item.icon}</Text>
-      </View>
-      <Text style={styles.searchItemText}>{item.title}</Text>
-      <Text style={styles.searchArrow}>🔍</Text>
-    </TouchableOpacity>
-  );
-  
-  const CommunityPost = ({ post, onLike, onComment, onShare }) => (
-    <View style={styles.postCard}>
-      <View style={styles.postHeader}>
-        <Text style={styles.avatar}>{post.avatar}</Text>
-        <Text style={styles.authorName}>{post.author}</Text>
-      </View>
-      <Text style={styles.postContent}>{post.content}</Text>
-      <View style={styles.postActions}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => onLike(post.id)}>
-          <Text style={styles.actionIcon}>👍</Text>
-          <Text style={styles.actionText}>{post.likes}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() => onComment(post.id)}>
-          <Text style={styles.actionIcon}>💬</Text>
-          <Text style={styles.actionText}>{post.comments}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() => onShare(post.id)}>
-          <Text style={styles.actionIcon}>↗️</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-  
-  
   
   // Main Screen Component (Presentation Layer)
   const ZaoLearnScreen = () => {
@@ -212,6 +128,10 @@ import {
   
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.vectorContainer}>
+        <Image source={require('../../assets/Vector1.png')} style={styles.vector1} />
+        <Image source={require('../../assets/Vector.png')} style={styles.vector2} />
+      </View>
         <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
         
         <Header
@@ -294,6 +214,29 @@ import {
       flex: 1,
       backgroundColor: '#f8f9fa',
     },
+    vectorContainer: {
+      position: 'absolute',
+      width: '100%',
+      height: '100%',
+      zIndex: -1,
+    },
+    // vector1: {
+    //   position: 'absolute',
+    //   width: 130,
+    //   height: 128,
+    //   top: 100,
+    //   left: 250,
+    //   opacity: 0.1,
+    //   transform: [{ rotate: '-161.18deg' }],
+    // },
+    vector2: {
+      position: 'absolute',
+      width: 200,
+      height: 200,
+      top: 300,
+      left: 200,
+      opacity: 0.05,
+    },
     loadingText: {
       textAlign: 'center',
       marginTop: 50,
@@ -357,28 +300,7 @@ import {
       fontSize: 16,
       color: '#666',
     },
-    tabContainer: {
-      flexDirection: 'row',
-      backgroundColor: '#fff',
-      paddingHorizontal: 16,
-    },
-    tab: {
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      marginRight: 24,
-    },
-    activeTab: {
-      borderBottomWidth: 2,
-      borderBottomColor: '#4CAF50',
-    },
-    tabText: {
-      fontSize: 16,
-      color: '#666',
-    },
-    activeTabText: {
-      color: '#4CAF50',
-      fontWeight: '600',
-    },
+   
     content: {
       flex: 1,
     },
@@ -397,68 +319,7 @@ import {
       color: '#666',
       marginBottom: 12,
     },
-    courseCard: {
-      backgroundColor: '#4CAF50',
-      borderRadius: 12,
-      padding: 20,
-      marginBottom: 16,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    courseContent: {
-      flex: 1,
-    },
-    courseEmoji: {
-      fontSize: 32,
-      marginBottom: 8,
-    },
-    courseTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: '#fff',
-      marginBottom: 16,
-    },
-    learnButton: {
-      backgroundColor: '#fff',
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 20,
-      alignSelf: 'flex-start',
-    },
-    learnButtonText: {
-      color: '#4CAF50',
-      fontWeight: '600',
-    },
-    courseIcon: {
-      fontSize: 24,
-    },
-    searchItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      padding: 12,
-      borderRadius: 8,
-      marginBottom: 8,
-    },
-    searchItemIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: '#f8f9fa',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 12,
-    },
-    searchItemText: {
-      flex: 1,
-      fontSize: 16,
-      color: '#333',
-    },
-    searchArrow: {
-      fontSize: 16,
-      color: '#666',
-    },
+   
     getStartedButton: {
       backgroundColor: '#4CAF50',
       padding: 16,
@@ -471,46 +332,7 @@ import {
       fontSize: 16,
       fontWeight: '600',
     },
-    postCard: {
-      backgroundColor: '#fff',
-      padding: 16,
-      borderRadius: 8,
-      marginBottom: 16,
-    },
-    postHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 12,
-    },
-    avatar: {
-      fontSize: 20,
-      marginRight: 8,
-    },
-    authorName: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: '#333',
-    },
-    postContent: {
-      fontSize: 14,
-      color: '#666',
-      lineHeight: 20,
-      marginBottom: 12,
-    },
-    postActions: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    actionButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginRight: 16,
-      padding: 4,
-    },
-    actionIcon: {
-      fontSize: 14,
-      marginRight: 4,
-    },
+    
     actionText: {
       fontSize: 14,
       color: '#666',

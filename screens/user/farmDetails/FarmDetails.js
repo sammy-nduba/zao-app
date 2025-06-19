@@ -36,7 +36,7 @@ const FarmDetails = ({ navigation }) => {
     <ScrollableMainContainer contentContainerStyle={styles.container}>
       <View style={styles.vectorContainer}>
         <Image 
-          source={require('../../../assets/Vector 1.png')} 
+          source={require('../../../assets/Vector1.png')} 
           style={styles.vector1}
         />
         <Image 

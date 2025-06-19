@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { colors } from '../../config/theme';
 
 const CropSummary = ({ cropData, onSeeMore }) => (
   <View style={styles.cropContainer}>
+  
     <View style={styles.cropHeader}>
       <Text style={styles.cropTitle}>My Crop</Text>
       <TouchableOpacity onPress={onSeeMore}>
@@ -13,6 +14,9 @@ const CropSummary = ({ cropData, onSeeMore }) => (
 
     <View style={styles.cropContent}>
       <View style={styles.cropCard}>
+      <View style={styles.vectorContainer}>
+        <Image source={require('../../assets/Vector_L.png')} />
+      </View>
         <Text style={styles.cropName}>{cropData.name}</Text>
         <Text style={styles.cropPhase}>{cropData.phase}</Text>
         <Text style={styles.cropHealth}>Farm Health - {cropData.healthPercentage}%</Text>
@@ -82,6 +86,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 15,
+  },
+  vectorContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    zIndex: -1,
+    marginTop: 400
   },
   cropTitle: {
     fontSize: 20,

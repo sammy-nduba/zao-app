@@ -9,25 +9,25 @@ export class ApiWeatherRepository extends WeatherRepository {
     this.apiClient = apiClient;
   }
 
-  async getCurrentWeather() {
+  async getCurrentWeather(location = 'Nairobi') {
     try {
-      console.log('ApiWeatherRepository.getCurrentWeather called'); // Debug
+      console.log('ApiWeatherRepository.getCurrentWeather called', { location });
       const response = await this.apiClient.get('/current.json', {
         params: {
-          key: '755fb3d168444a3892a80927250906',
-          q: 'Nairobi',
+          key: '755fb3d168444a3892a80927250906', // Replace with env variable in production
+          q: location,
           aqi: 'no',
         },
       });
-      console.log('ApiWeatherRepository.getCurrentWeather response:', response.data); // Debug
+      console.log('ApiWeatherRepository.getCurrentWeather response:', response.data);
       const data = response.data.current;
       return new WeatherData(
         data.temp_c,
-        response.data.location.name, // Use API location
-        data.precip_mm * 10, // Convert to percentage
+        response.data.location.name,
+        data.precip_mm * 10,
         data.humidity,
         data.wind_kph,
-        '6:30 PM', // Hardcode fallback as /current.json lacks astro
+        response.data.astro?.sunset || '6:30 PM',
         data.condition.text.toLowerCase().replace(/\s/g, '_')
       );
     } catch (error) {
@@ -35,22 +35,22 @@ export class ApiWeatherRepository extends WeatherRepository {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
-      }); // Debug
-      return null;
+      });
+      throw new Error(`Failed to fetch current weather: ${error.message}`);
     }
   }
 
-  async getWeatherForecast() {
+  async getWeatherForecast(location = 'Nairobi', days = 7) {
     try {
-      console.log('ApiWeatherRepository.getWeatherForecast called'); // Debug
+      console.log('ApiWeatherRepository.getWeatherForecast called', { location, days });
       const response = await this.apiClient.get('/forecast.json', {
         params: {
           key: '755fb3d168444a3892a80927250906',
-          q: 'Nairobi',
-          days: 7,
+          q: location,
+          days,
         },
       });
-      console.log('ApiWeatherRepository.getWeatherForecast response:', response.data); // Debug
+      console.log('ApiWeatherRepository.getWeatherForecast response:', response.data);
       const forecast = response.data.forecast.forecastday;
       const today = new Date().toLocaleDateString('en-US', { weekday: 'short' });
       return forecast.map((day) => {
@@ -67,8 +67,8 @@ export class ApiWeatherRepository extends WeatherRepository {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
-      }); // Debug
-      return [];
+      });
+      throw new Error(`Failed to fetch weather forecast: ${error.message}`);
     }
   }
 }

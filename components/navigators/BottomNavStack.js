@@ -51,7 +51,7 @@ export const BottomNavStack = () => {
   };
 
   const renderTabBar = ({ routeName, selectedTab, navigate }) => {
-    if (routeName === 'HomeStack') return null; // Home is handled by central button
+    if (routeName === 'HomeStack') return null; 
     return (
       <TouchableOpacity
         onPress={() => {

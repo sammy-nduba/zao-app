@@ -6,7 +6,7 @@ import {
   StyleSheet,
   SafeAreaView,
   ActivityIndicator,
-  Alert,
+  Alert, Image 
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useLanguageSelection } from '../viewModel/LanguageSelectionPresenter';
@@ -51,6 +51,10 @@ export default function LanguageSelectionScreen({ presenter, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.vectorContainer}>
+        <Image source={require('../assets/Vector1.png')} style={styles.vector1} />
+        <Image source={require('../assets/Vector.png')} style={styles.vector2} />
+      </View>
       <View style={styles.content}>
         <Text style={styles.title}>{t('language.title')}</Text>
         <Text style={styles.subtitle}>{t('language.subtitle')}</Text>
@@ -89,6 +93,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  vectorContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    zIndex: -1,
+    marginTop: 400
+  },
+  // vector1: {
+  //   position: 'absolute',
+  //   width: 130,
+  //   height: 128,
+  //   top: 100,
+  //   left: 250,
+  //   opacity: 0.1,
+  //   transform: [{ rotate: '-161.18deg' }],
+  // },
+  vector2: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    top: 300,
+    left: 200,
+    opacity: 0.05,
   },
   content: {
     flex: 1,

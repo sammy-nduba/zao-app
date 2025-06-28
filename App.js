@@ -1,6 +1,5 @@
-import global from './global';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Alert, Linking, Platform } from 'react-native';
+import { Alert, Linking, Platform, View, ActivityIndicator, Text } from 'react-native';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -67,6 +66,16 @@ const showUpdateAlert = (updateInfo, t) => {
   );
 };
 
+function LoadingScreen({ message }) {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <ActivityIndicator size="large" color="#007BFF" />
+      {message && <Text style={{ marginTop: 10 }}>{message}</Text>}
+    </View>
+  );
+}
+
+
 export default function App() {
   const { t } = useTranslation();
   const navigationRef = useNavigationContainerRef();
@@ -105,6 +114,7 @@ export default function App() {
       console.log('App: prepareApp completed');
     }
   }, [viewModel, t]); // Removed appReady from dependencies
+  
 
   useEffect(() => {
     prepareApp();
@@ -142,10 +152,15 @@ export default function App() {
     },
   };
 
+  // if (!appReady || !i18nReady || authState.isZaoAppOnboarded === null) {
+  //   console.log('App: Waiting for initialization', { appReady, i18nReady, authState });
+  //   return null;
+  // }
   if (!appReady || !i18nReady || authState.isZaoAppOnboarded === null) {
     console.log('App: Waiting for initialization', { appReady, i18nReady, authState });
-    return null;
+    return <LoadingScreen message={t('loading.initialization')} />;
   }
+  
 
   return (
     <I18nextProvider i18n={i18n}>
@@ -166,6 +181,7 @@ export default function App() {
                     ? 'Onboarding'
                     : authState.isLoggedIn
                     ? 'MainTabs'
+                    // : 'MainTabs'
                     : 'Auth'
                     
                 }

@@ -9,7 +9,6 @@ import { AuthContext } from '../../utils/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
-import { RegistrationViewModel } from '../../viewModel/RegistrationViewModel';
 import container from '../../infrastructure/di/Container';
 
 const Register = () => {
@@ -23,13 +22,10 @@ const Register = () => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { setIsRegistered } = useContext(AuthContext);
+  const [step, setStep] = useState('form'); // 'form', 'verify', 'success'
+  const { setIsRegistered, setUser } = useContext(AuthContext); // Added setUser
   const navigation = useNavigation();
-  const viewModel = useMemo(() => new RegistrationViewModel(
-    container.get('registerUserUseCase'),
-    container.get('socialRegisterUseCase'),
-    container.get('validationService')
-  ), []);
+  const viewModel = useMemo(() => container.get('registrationViewModel'), []);
 
   const passwordRequirements = viewModel.getPasswordRequirements(formData.password);
   const metRequirementsCount = passwordRequirements.filter(req => req.met).length;
@@ -39,8 +35,8 @@ const Register = () => {
 
   const handleFieldChange = (fieldName, value) => {
     setFormData(prev => ({ ...prev, [fieldName]: value }));
+    viewModel.updateFormData(fieldName, value);
 
-    // Real-time validation
     let error = '';
     if (fieldName === 'phoneNumber') {
       const { isValid, error: phoneError } = viewModel.validatePhoneNumber(value);
@@ -56,76 +52,106 @@ const Register = () => {
     setFieldErrors(prev => ({ ...prev, [fieldName]: error }));
   };
 
-  // src/screens/Register.js
-const handleRegister = async () => {
-  setIsLoading(true);
-  setFieldErrors({});
-
-  try {
-    console.log('Submitting registration:', formData); // Debug
-    const result = await viewModel.register(formData);
-    
-    if (result.success) {
-      console.log('Registration success, setting isRegistered'); // Debug
-      setIsRegistered(true);
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Registration successful! Please set up your farm details.',
-      });
-      navigation.replace('MainTabs');
-    } else {
-      console.log('Registration failed:', result.error); // Debug
-      const errors = result.error.split(': ')[1]?.split(', ') || [result.error];
-      const newFieldErrors = {};
-      
-      errors.forEach(error => {
-        if (error.includes('First name')) newFieldErrors.firstName = error;
-        else if (error.includes('Last name')) newFieldErrors.lastName = error;
-        else if (error.includes('Email') || error.includes('email')) newFieldErrors.email = error;
-        else if (error.includes('phone')) newFieldErrors.phoneNumber = error;
-        else if (error.includes('Password') || error.includes('password')) newFieldErrors.password = error;
-      });
-      
-      setFieldErrors(newFieldErrors);
-      
+  const handleInitiateSignup = async () => {
+    setIsLoading(true);
+    setFieldErrors({});
+    try {
+      console.log('Initiating signup:', formData.email);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Client timeout')), 15000)
+      );
+      const result = await Promise.race([viewModel.initiateSignup(), timeoutPromise]);
+      if (result.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Verification Email Sent',
+          text2: result.message,
+        });
+        setStep('verify');
+      } else {
+        setFieldErrors({ email: result.error });
+        Toast.show({
+          type: 'error',
+          text1: 'Signup Failed',
+          text2: result.error,
+        });
+      }
+    } catch (error) {
+      console.error('Initiate signup error:', error.message);
       Toast.show({
         type: 'error',
-        text1: 'Registration Failed',
-        text2: errors[0] || 'Please check your information and try again',
+        text1: 'Error',
+        text2: error.message.includes('502')
+          ? 'Server is currently unavailable. Please try again later.'
+          : error.message.includes('timed out')
+          ? 'Request timed out. Please check your connection.'
+          : error.message,
       });
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error('Unexpected registration error:', error.message); // Debug
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      text2: error.message.includes('AsyncStorage') 
-        ? 'Storage error. Please try again.'
-        : error.message,
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
-  const handleSocialRegister = async (provider) => {
+  const handleRegister = async () => {
     setIsLoading(true);
-    
+    setFieldErrors({});
     try {
-      console.log('Social register:', provider); // Debug
-      const result = await viewModel.socialRegister(provider);
-      
+      console.log('Completing registration:', formData);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Client timeout')), 15000)
+      );
+      const result = await Promise.race([viewModel.register(), timeoutPromise]);
+      console.log('Register result:', result);
       if (result.success) {
         setIsRegistered(true);
+        setUser({ id: result.user.id, ...result.user }); // Store user with id
         Toast.show({
           type: 'success',
           text1: 'Success',
-          text2: `Registered with ${result.provider}! Please log in.`,
+          text2: 'Registration successful! Please set up your farm details.',
         });
-        navigation.navigate('Login');
+        navigation.navigate('FarmDetails'); // Navigate to FarmDetails
       } else {
-        console.log('Social registration failed:', result.error); // Debug
+        setFieldErrors(result.fieldErrors || {});
+        Toast.show({
+          type: 'error',
+          text1: 'Registration Failed',
+          text2: result.error || 'Please check your information and try again',
+        });
+      }
+    } catch (error) {
+      console.error('Registration error:', error.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message.includes('502')
+          ? 'Server is currently unavailable. Please try again later.'
+          : error.message.includes('timed out')
+          ? 'Request timed out. Please check your connection.'
+          : error.message.includes('AsyncStorage')
+          ? 'Storage error. Please try again.'
+          : error.message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSocialRegister = async (provider) => {
+    setIsLoading(true);
+    try {
+      console.log('Social register:', provider);
+      const result = await viewModel.socialRegister(provider);
+      if (result.success) {
+        setIsRegistered(true);
+        setUser({ id: result.user.id, ...result.user }); // Store user with id
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: `Registered with ${result.provider}! Please set up your farm details.`,
+        });
+        navigation.navigate('FarmDetails'); // Navigate to FarmDetails
+      } else {
         Toast.show({
           type: 'error',
           text1: 'Registration Failed',
@@ -133,11 +159,13 @@ const handleRegister = async () => {
         });
       }
     } catch (error) {
-      console.error('Unexpected social registration error:', error); // Debug
+      console.error('Social registration error:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Social registration failed',
+        text2: error.message.includes('502')
+          ? 'Server is currently unavailable. Please try again later.'
+          : 'Social registration failed',
       });
     } finally {
       setIsLoading(false);
@@ -163,132 +191,142 @@ const handleRegister = async () => {
       </View>
 
       <View style={styles.formContainer}>
-        {/* First Name */}
-        <View style={styles.inputWrapper}>
-          <StyledText style={styles.inputLabel}>First name</StyledText>
-          <StyledTextInput
-            placeholder="Enter first name"
-            value={formData.firstName}
-            onChangeText={(value) => handleFieldChange('firstName', value)}
-            style={[styles.input, fieldErrors.firstName ? styles.inputError : null]}
-          />
-          {fieldErrors.firstName && (
-            <StyledText style={styles.errorText}>{fieldErrors.firstName}</StyledText>
-          )}
-        </View>
-
-        {/* Last Name */}
-        <View style={styles.inputWrapper}>
-          <StyledText style={styles.inputLabel}>Last name</StyledText>
-          <StyledTextInput
-            placeholder="Enter last name"
-            value={formData.lastName}
-            onChangeText={(value) => handleFieldChange('lastName', value)}
-            style={[styles.input, fieldErrors.lastName ? styles.inputError : null]}
-          />
-          {fieldErrors.lastName && (
-            <StyledText style={styles.errorText}>{fieldErrors.lastName}</StyledText>
-          )}
-        </View>
-
-        {/* Email */}
-        <View style={styles.inputWrapper}>
-          <StyledText style={styles.inputLabel}>Email address</StyledText>
-          <StyledTextInput
-            placeholder="Enter email address"
-            value={formData.email}
-            onChangeText={(value) => handleFieldChange('email', value)}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={[styles.input, fieldErrors.email ? styles.inputError : null]}
-          />
-          {fieldErrors.email && (
-            <StyledText style={styles.errorText}>{fieldErrors.email}</StyledText>
-          )}
-        </View>
-
-        {/* Phone Number */}
-        <View style={styles.inputWrapper}>
-          <StyledText style={styles.inputLabel}>Phone number</StyledText>
-          <StyledTextInput
-            placeholder="Enter phone number (e.g., +254700000000)"
-            value={formData.phoneNumber}
-            onChangeText={(value) => handleFieldChange('phoneNumber', value)}
-            keyboardType="phone-pad"
-            maxLength={12}
-            style={[styles.input, fieldErrors.phoneNumber ? styles.inputError : null]}
-          />
-          {fieldErrors.phoneNumber && (
-            <StyledText style={styles.errorText}>{fieldErrors.phoneNumber}</StyledText>
-          )}
-        </View>
-
-        {/* Password */}
-        <View style={styles.inputWrapper}>
-          <StyledText style={styles.inputLabel}>Password</StyledText>
-          <View style={styles.passwordInputContainer}>
-            <StyledTextInput
-              placeholder="***********"
-              value={formData.password}
-              onChangeText={(value) => handleFieldChange('password', value)}
-              secureTextEntry={!showPassword}
-              style={[styles.input, fieldErrors.password ? styles.inputError : null]}
-            />
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => setShowPassword(!showPassword)}
-            >
-              <MaterialCommunityIcons
-                name={showPassword ? 'eye-off' : 'eye'}
-                size={20}
-                color={colors.placeholder}
+        {step === 'form' && (
+          <>
+            <View style={styles.inputWrapper}>
+              <StyledText style={styles.inputLabel}>First name</StyledText>
+              <StyledTextInput
+                placeholder="Enter first name"
+                value={formData.firstName}
+                onChangeText={(value) => handleFieldChange('firstName', value)}
+                style={[styles.input, fieldErrors.firstName ? styles.inputError : null]}
               />
-            </TouchableOpacity>
-          </View>
-          {fieldErrors.password && (
-            <StyledText style={styles.errorText}>{fieldErrors.password}</StyledText>
-          )}
-        </View>
+              {fieldErrors.firstName && (
+                <StyledText style={styles.errorText}>{fieldErrors.firstName}</StyledText>
+              )}
+            </View>
 
-        {/* Password Requirements */}
-        <View style={styles.passwordRequirements}>
-          <StyledText style={styles.requirementText}>Password strength</StyledText>
-          <StyledText style={styles.requirementCount}>{`${metRequirementsCount}/5`}</StyledText>
-          {passwordRequirements.map(({ label, met }, index) => (
-            <StyledText
-              key={index}
-              style={[styles.requirementItem, met && styles.requirementMet]}
-            >
-              {label}
+            <View style={styles.inputWrapper}>
+              <StyledText style={styles.inputLabel}>Last name</StyledText>
+              <StyledTextInput
+                placeholder="Enter last name"
+                value={formData.lastName}
+                onChangeText={(value) => handleFieldChange('lastName', value)}
+                style={[styles.input, fieldErrors.lastName ? styles.inputError : null]}
+              />
+              {fieldErrors.lastName && (
+                <StyledText style={styles.errorText}>{fieldErrors.lastName}</StyledText>
+              )}
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <StyledText style={styles.inputLabel}>Email address</StyledText>
+              <StyledTextInput
+                placeholder="Enter email address"
+                value={formData.email}
+                onChangeText={(value) => handleFieldChange('email', value)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={[styles.input, fieldErrors.email ? styles.inputError : null]}
+              />
+              {fieldErrors.email && (
+                <StyledText style={styles.errorText}>{fieldErrors.email}</StyledText>
+              )}
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <StyledText style={styles.inputLabel}>Phone number</StyledText>
+              <StyledTextInput
+                placeholder="Enter phone number (e.g., +254700000000)"
+                value={formData.phoneNumber}
+                onChangeText={(value) => handleFieldChange('phoneNumber', value)}
+                keyboardType="phone-pad"
+                maxLength={12}
+                style={[styles.input, fieldErrors.phoneNumber ? styles.inputError : null]}
+              />
+              {fieldErrors.phoneNumber && (
+                <StyledText style={styles.errorText}>{fieldErrors.phoneNumber}</StyledText>
+              )}
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <StyledText style={styles.inputLabel}>Password</StyledText>
+              <View style={styles.passwordInputContainer}>
+                <StyledTextInput
+                  placeholder="***********"
+                  value={formData.password}
+                  onChangeText={(value) => handleFieldChange('password', value)}
+                  secureTextEntry={!showPassword}
+                  style={[styles.input, fieldErrors.password ? styles.inputError : null]}
+                />
+                <TouchableOpacity
+                  style={styles.toggleButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <MaterialCommunityIcons
+                    name={showPassword ? 'eye-off' : 'eye'}
+                    size={20}
+                    color={colors.placeholder}
+                  />
+                </TouchableOpacity>
+              </View>
+              {fieldErrors.password && (
+                <StyledText style={styles.errorText}>{fieldErrors.password}</StyledText>
+              )}
+            </View>
+
+            <View style={styles.passwordRequirements}>
+              <StyledText style={styles.requirementText}>Password strength</StyledText>
+              <StyledText style={styles.requirementCount}>{`${metRequirementsCount}/5`}</StyledText>
+              {passwordRequirements.map(({ label, met }, index) => (
+                <StyledText
+                  key={index}
+                  style={[styles.requirementItem, met && styles.requirementMet]}
+                >
+                  {label}
+                </StyledText>
+              ))}
+            </View>
+
+            <View style={styles.termsContainer}>
+              <StyledText style={styles.termsText}>
+                By clicking "Send Verification Email", you agree to our{' '}
+                <StyledText style={styles.linkText} onPress={goToUserAgreement}>
+                  User agreement
+                </StyledText>{' '}
+                and{' '}
+                <StyledText style={styles.linkText} onPress={goToPrivacyPolicy}>
+                  Privacy policy
+                </StyledText>{' '}
+                of Zao APP.
+              </StyledText>
+            </View>
+
+            <StyledButton
+              title="Send Verification Email"
+              onPress={handleInitiateSignup}
+              disabled={isLoading || !isFormValid || !!fieldErrors.phoneNumber}
+              style={styles.registerButton}
+            />
+          </>
+        )}
+
+        {step === 'verify' && (
+          <View style={styles.verifyContainer}>
+            <StyledText style={styles.verifyText}>
+              Please check your email for a verification link. Once verified, complete your registration.
             </StyledText>
-          ))}
-        </View>
-        
-        {/* Terms */}
-        <View style={styles.termsContainer}>
-          <StyledText style={styles.termsText}>
-            By clicking "Create account", you agree to our{' '}
-            <StyledText style={styles.linkText} onPress={goToUserAgreement}>
-              User agreement
-            </StyledText>{' '}
-            and{' '}
-            <StyledText style={styles.linkText} onPress={goToPrivacyPolicy}>
-              Privacy policy
-            </StyledText>{' '}
-            of Zao APP.
-          </StyledText>
-        </View>
+            <StyledButton
+              title="Complete Registration"
+              onPress={handleRegister}
+              disabled={isLoading}
+              style={styles.registerButton}
+            />
+          </View>
+        )}
       </View>
 
-      {/* Register Button */}
       <View style={styles.buttonContainer}>
-        <StyledButton
-          title="Create account"
-          onPress={handleRegister}
-          disabled={isLoading || !isFormValid || !!fieldErrors.phoneNumber}
-          style={styles.registerButton}
-        />
-
         <View style={styles.dividerContainer}>
           <View style={styles.dividerLine} />
           <StyledText style={styles.dividerText}>Or</StyledText>
@@ -296,12 +334,11 @@ const handleRegister = async () => {
         </View>
       </View>
 
-      {/* Social Buttons */}
       <View style={styles.socialButtonsContainer}>
         <StyledButton
           title="Continue with Google"
           icon="google"
-          onPress={() => handleSocialRegister('Google')}
+          onPress={() => handleSocialRegister('google')}
           isSocial
           style={styles.socialButton}
           disabled={isLoading}
@@ -309,37 +346,47 @@ const handleRegister = async () => {
         <StyledButton
           title="Continue with Facebook"
           icon="facebook"
-          onPress={() => handleSocialRegister('Facebook')}
+          onPress={() => handleSocialRegister('facebook')}
           isSocial
           style={styles.socialButton}
           disabled={isLoading}
         />
         <StyledButton
           title="Continue with Apple"
-          icon="apple1"
-          onPress={() => handleSocialRegister('Apple')}
+          icon="apple"
+          onPress={() => handleSocialRegister('apple')}
           isSocial
           style={styles.socialButton}
           disabled={isLoading}
         />
       </View>
 
-      {/* Login Link */}
       <View style={styles.loginContainer}>
         <StyledText style={styles.loginText}>Already have an account? </StyledText>
         <TouchableOpacity onPress={goToLogin}>
           <StyledText style={styles.loginLink}>Log In</StyledText>
         </TouchableOpacity>
       </View>
+      <Toast />
     </ScrollableMainContainer>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 24,
     backgroundColor: colors.background,
+  },
+  verifyContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  verifyText: {
+    fontFamily: 'Roboto',
+    fontSize: 16,
+    color: colors.grey[600],
+    textAlign: 'center',
+    marginBottom: 20,
   },
   vectorContainer: {
     position: 'absolute',

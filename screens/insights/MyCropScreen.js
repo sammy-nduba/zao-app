@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView,
   StatusBar, TextInput, Image } from 'react-native';
+  import { useNavigation } from '@react-navigation/native';
 import { LocalTaskRepository } from '../../domain/repository/dataLayer/LocalTaskRepository';
 import { GetTasksUseCase } from '../../domain/UseCases/homeUseCase/GetTaskUseCase';
 import { GetCalendarEventsUseCase } from '../../domain/UseCases/homeUseCase/GetCalendarEventsUseCase'
@@ -185,6 +186,7 @@ const Legend = () => (
 
 // Main Screen Component
 const MyCropScreen = () => {
+  const navigation = useNavigation(); 
   const { tasks, calendarEvents, loading } = useFarmingData();
   // const [activeTab, setActiveTab] = useState(false)
 
@@ -206,11 +208,15 @@ const MyCropScreen = () => {
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
+        <TouchableOpacity style={styles.backButton}
+        onPress={() => navigation.navigate('Home')}
+        >
+
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Crop</Text>
-        <TouchableOpacity style={styles.notificationButton}>
+        <TouchableOpacity style={styles.notificationButton} 
+        >
           <Text style={styles.notificationIcon}>🔔</Text>
         </TouchableOpacity>
       </View>
@@ -223,7 +229,9 @@ const MyCropScreen = () => {
             placeholder="Farm"
             placeholderTextColor="#999"
           />
-          <TouchableOpacity style={styles.filterButton}>
+          <TouchableOpacity style={styles.filterButton}
+          onPress={() => navigation.navigate('FarmDetails')}
+          >
             <Text style={styles.filterIcon}>⚙️</Text>
           </TouchableOpacity>
         </View>

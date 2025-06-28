@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, Image } from 'react-native';
 import { ScrollableMainContainer, FarmerTypeInput } from '../../../components';
 import StyledText from '../../../components/Texts/StyledText';
@@ -6,11 +6,11 @@ import { colors } from '../../../config/theme';
 import NewFarmerForm from './NewFarmerForm';
 import ExperiencedFarmerForm from './ExperiencedFarmerForm';
 import { FarmDetailsViewModel } from '../../../viewModel/FarmDetailsViewModel';
-
-
-
+import { AuthContext } from '../../../utils/AuthContext';
+import Toast from 'react-native-toast-message';
 
 const FarmDetails = ({ navigation }) => {
+  const { user } = useContext(AuthContext);
   const [viewModel] = useState(() => new FarmDetailsViewModel());
   const [state, setState] = useState(viewModel.getState());
 
@@ -19,6 +19,15 @@ const FarmDetails = ({ navigation }) => {
       await viewModel.loadFarmerData(state.farmerType);
       setState(viewModel.getState());
     };
+    if (!user?.id) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please complete registration first.',
+      });
+      navigation.navigate('Register');
+      return;
+    }
     loadData();
   }, [state.farmerType]);
 
@@ -61,6 +70,7 @@ const FarmDetails = ({ navigation }) => {
           formData={state.formData} 
           onFormChange={handleFormChange}
           navigation={navigation}
+          userId={user?.id} 
         />
       ) : (
         <ExperiencedFarmerForm 
@@ -68,6 +78,7 @@ const FarmDetails = ({ navigation }) => {
           formData={state.formData} 
           onFormChange={handleFormChange}
           navigation={navigation}
+          userId={user?.id} 
         />
       )}
     </ScrollableMainContainer>

@@ -1,8 +1,5 @@
-
 import { FarmerRepository } from '../../domain/repository/farmer/FarmerRepository';
 import { Farmer } from '../../domain/entities/Farmer';
-
-
 
 export class ApiFarmerRepository extends FarmerRepository {
   constructor(apiClient) {
@@ -10,21 +7,35 @@ export class ApiFarmerRepository extends FarmerRepository {
     this.apiClient = apiClient;
   }
 
-  async saveFarmer(farmer) {
+  async saveFarmer(farmer, userId) {
     try {
-      const response = await this.apiClient.post('/farmers', farmer);
-      return new Farmer(response);
+      console.log('ApiFarmerRepository.saveFarmer called with:', { farmer, userId });
+      const response = await this.apiClient.post(`/api/farmers/${userId}`, farmer);
+      console.log('ApiFarmerRepository.saveFarmer response:', response.data);
+      return new Farmer(response.data);
     } catch (error) {
-      throw new Error(`Failed to save farmer data: ${error.message}`);
+      console.error('ApiFarmerRepository.saveFarmer error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      throw new Error(error.response?.data?.message || `Failed to save farmer data: ${error.message}`);
     }
   }
 
   async getFarmer(farmerType) {
     try {
-      const response = await this.apiClient.get(`/farmers/${farmerType}`);
-      return response ? new Farmer(response) : null;
+      console.log('ApiFarmerRepository.getFarmer called with:', farmerType);
+      const response = await this.apiClient.get(`/api/farmers/${farmerType}`);
+      console.log('ApiFarmerRepository.getFarmer response:', response.data);
+      return response.data ? new Farmer(response.data) : null;
     } catch (error) {
-      throw new Error(`Failed to retrieve farmer data: ${error.message}`);
+      console.error('ApiFarmerRepository.getFarmer error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      throw new Error(error.response?.data?.message || `Failed to retrieve farmer data: ${error.message}`);
     }
   }
 }

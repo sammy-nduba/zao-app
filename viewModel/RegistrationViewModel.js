@@ -14,6 +14,7 @@ export class RegistrationViewModel {
       fieldErrors: {},
       isLoading: false,
       isRegistered: false,
+      verificationToken: null,
     };
   }
 
@@ -27,17 +28,38 @@ export class RegistrationViewModel {
     }
   }
 
-  async register(formData) {
+  async initiateSignup() {
     this.state.isLoading = true;
     this.state.fieldErrors = {};
     try {
-      console.log('RegistrationViewModel.register called with:', formData); // Debug
-      const user = await this.registerUseCase.execute(formData);
-      console.log('Registration successful, user:', user); // Debug
+      console.log('RegistrationViewModel.initiateSignup called with:', this.state.formData.email);
+      const result = await this.registerUseCase.initiateSignup(this.state.formData.email);
+      console.log('RegistrationViewModel.initiateSignup result:', result);
+      this.state.verificationToken = result.farmerId;
+      return { success: true, message: result.message };
+    } catch (error) {
+      console.error('RegistrationViewModel.initiateSignup error:', error.message);
+      this.state.fieldErrors.email = error.message;
+      return { success: false, error: error.message };
+    } finally {
+      this.state.isLoading = false;
+    }
+  }
+
+  async register() {
+    this.state.isLoading = true;
+    this.state.fieldErrors = {};
+    try {
+      console.log('RegistrationViewModel.register called with:', this.state.formData);
+      if (!this.state.verificationToken) {
+        throw new Error('Verification token not found. Please initiate signup first.');
+      }
+      const user = await this.registerUseCase.execute(this.state.verificationToken, this.state.formData);
+      console.log('Registration successful, user:', user);
       this.state.isRegistered = true;
       return { success: true, user };
     } catch (error) {
-      console.error('Registration error:', error.message); // Debug
+      console.error('Registration error:', error.message);
       const errors = error.message.split(': ')[1]?.split(', ') || [error.message];
       const newFieldErrors = {};
       errors.forEach(error => {
@@ -57,12 +79,12 @@ export class RegistrationViewModel {
   async socialRegister(provider) {
     this.state.isLoading = true;
     try {
-      console.log('Social register called for:', provider); // Debug
-      const user = await this.socialRegisterUseCase.execute(provider);
+      console.log('Social register called for:', provider);
+      const user = await this.socialRegisterUseCase.execute(provider.toLowerCase());
       this.state.isRegistered = true;
       return { success: true, user, provider };
     } catch (error) {
-      console.error('Social registration error:', error.message); // Debug
+      console.error('Social registration error:', error.message);
       return { success: false, error: error.message };
     } finally {
       this.state.isLoading = false;
@@ -79,5 +101,9 @@ export class RegistrationViewModel {
 
   getState() {
     return { ...this.state };
+  }
+
+  setVerificationToken(token) {
+    this.state.verificationToken = token;
   }
 }

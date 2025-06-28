@@ -1,5 +1,5 @@
-// src/domain/UseCases/user/RegisterUserUseCase.js
 import { User } from '../../../domain/entities/User';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export class RegisterUserUseCase {
   constructor(userRepository, validationService, storageService) {
@@ -8,14 +8,21 @@ export class RegisterUserUseCase {
     this.storageService = storageService;
   }
 
-  async execute(userData) {
+  async initiateSignup(email) {
     try {
-      console.log('RegisterUserUseCase.execute called with:', userData); // Debug
-      const validationResult = this.validationService.validateRegistrationData(userData);
-      if (!validationResult.isValid) {
-        throw new Error(`Validation failed: ${validationResult.errors.join(', ')}`);
-      }
+      console.log('RegisterUserUseCase.initiateSignup called with:', email);
+      const result = await this.userRepository.initiateSignup(email);
+      console.log('RegisterUserUseCase.initiateSignup result:', result);
+      return result; // { message, farmerId }
+    } catch (error) {
+      console.error('RegisterUserUseCase.initiateSignup error:', error);
+      throw new Error(error.message);
+    }
+  }
 
+  async execute(token, userData) {
+    try {
+      console.log('RegisterUserUseCase.execute called with:', { token, userData });
       const user = new User(
         userData.firstName,
         userData.lastName,
@@ -23,20 +30,18 @@ export class RegisterUserUseCase {
         userData.phoneNumber,
         userData.password
       );
-
-      await this.userRepository.register(user);
-      console.log('User registered successfully'); // Debug
+      const response = await this.userRepository.register(token, user);
+      console.log('User registered successfully:', response);
       await this.storageService.storeItem('Registration', true);
-      console.log('Stored Registration status'); // Debug
-
-      return user;
+      await AsyncStorage.setItem('jwtToken', response.token);
+      console.log('Stored Registration status and JWT');
+      return response.user;
     } catch (error) {
-      console.error('RegisterUserUseCase error:', error); // Debug
+      console.error('RegisterUserUseCase error:', error);
       throw new Error(error.message);
     }
   }
 }
-
 export class SocialRegisterUseCase {
   constructor(socialAuthService, storageService) {
     this.socialAuthService = socialAuthService;

@@ -8,9 +8,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
+const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation, userId }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isLoading, setIsLoading] = useState(false);
   const farmSizeOptions = ['0-5 acres (Small Scale)', '5-20 acres (Medium Scale)', '20+ acres (Large Scale)'];
 
   const handleCropChange = (crop) => {
@@ -43,22 +44,51 @@ const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
   };
 
   const handleGetStarted = async () => {
-    const success = await viewModel.submitForm();
-    if (success) {
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Form submitted! Welcome to your dashboard.',
-      });
-      navigation.navigate('Login');
-    } else {
+    if (!userId) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: viewModel.getState().error,
+        text2: 'User not authenticated. Please register first.',
       });
+      navigation.navigate('Register');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const success = await viewModel.submitForm(userId);
+      if (success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Form submitted! Welcome to your dashboard.',
+        });
+        navigation.navigate('Login');
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: viewModel.getState().error.includes('502')
+            ? 'Server is currently unavailable. Please try again later.'
+            : viewModel.getState().error.includes('timed out')
+            ? 'Request timed out. Please check your connection.'
+            : viewModel.getState().error,
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message.includes('502')
+          ? 'Server is currently unavailable. Please try again later.'
+          : error.message.includes('timed out')
+          ? 'Request timed out. Please check your connection.'
+          : error.message,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
@@ -167,7 +197,7 @@ const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
         title="Get Started"
         onPress={handleGetStarted}
         style={styles.getStartedButton}
-        disabled={viewModel.getState().isLoading}
+        disabled={isLoading || viewModel.getState().isLoading}
       />
     </ScrollableMainContainer>
   );

@@ -47,12 +47,16 @@ export class FarmDetailsViewModel {
     }
   }
 
-  async submitForm() {
+  async submitForm(userId) {
+    if (!userId) {
+      this.state.error = 'User ID is required';
+      return false;
+    }
     this.state.isLoading = true;
     this.state.error = null;
     try {
       await this.validateFarmerData.execute(this.state.formData);
-      await this.saveFarmerData.execute(this.state.formData);
+      await this.saveFarmerData.execute(this.state.formData, userId);
       return true;
     } catch (error) {
       this.state.error = error.message;

@@ -7,17 +7,10 @@ import { useNavigation } from '@react-navigation/native';
 import ConnectScreen from '../../screens/insights/connect/ConnectScreen';
 import ZaoLearnScreen from '../../screens/zaoLearn/ZaoLearnScreen';
 import MarketScreen from '../../screens/insights/market/MarketScreen';
-import {ZaoAIScreen}  from '../../screens/ZaoAIScreen/ZaoAIScreen';
+import {ZaoAIScreen} from '../../screens/ZaoAIScreen/ZaoAIScreen';
 import HomeStack from './HomeStack';
 
-
-
 const centralIcon = require('../../assets/insights/cropImage.png');
-
-console.log("ZAOAI", ZaoAIScreen)
-
-
-
 
 export const BottomNavStack = () => {
   const navigation = useNavigation();
@@ -44,10 +37,9 @@ export const BottomNavStack = () => {
       <MaterialCommunityIcons
         name={icon}
         size={24}
-        color={routeName === selectedTab ? colors.primary : colors.grey}
+        color={routeName === selectedTab ? colors.white : colors.white} // Always white now
       />
     );
-    
   };
 
   const renderTabBar = ({ routeName, selectedTab, navigate }) => {
@@ -74,48 +66,56 @@ export const BottomNavStack = () => {
   };
 
   return (
-    <CurvedBottomBar.Navigator
-      type="UP"
-      style={styles.bottomBar}
-      height={100}
-      circleWidth={65}
-      bgColor={colors.primary[800]}
-      backgroundColor={colors.background}
-      borderTopLeftRight
-      strokeColor={colors.white}
-      initialRouteName="HomeStack"
-      screenOptions={{ headerShown: false }}
-      renderCircle={({ selectedTab, navigate }) => (
-        <TouchableOpacity
-          style={styles.btnCircleUp}
-      
-          onPress={() => {
-            navigation.navigate('HomeStack');
-            navigate('HomeStack');
-          }}
-        >
-          <Image
-            source={centralIcon}
-            style={styles.centralIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-      )}
-      tabBar={renderTabBar}>
-      <CurvedBottomBar.Screen name="HomeStack" component={HomeStack} position="CENTER"/>
-      <CurvedBottomBar.Screen name="connect" position="LEFT" component={ConnectScreen} options={{ headerShown: false }} />
-      <CurvedBottomBar.Screen name="learn" position="LEFT" component={ZaoLearnScreen } options={{ headerShown: false }}/>
-      <CurvedBottomBar.Screen name="market" position="RIGHT" component={MarketScreen} options={{ headerShown: false }}/>
-      <CurvedBottomBar.Screen name="ai" position="RIGHT" component={ZaoAIScreen} options={{ headerShown: false }} />
-
-    </CurvedBottomBar.Navigator>
+    <View style={styles.container}>
+      <CurvedBottomBar.Navigator
+        type="UP"
+        style={styles.bottomBar}
+        height={70}
+        circleWidth={65}
+        bgColor={colors.primary[800]}
+        initialRouteName="HomeStack"
+        borderTopLeftRight
+        strokeWidth={0}
+        strokeColor={colors.primary[800]}
+        screenOptions={{ headerShown: false }}
+        renderCircle={({ selectedTab, navigate }) => (
+          <TouchableOpacity
+            style={styles.btnCircleUp}
+            onPress={() => {
+              navigation.navigate('HomeStack');
+              navigate('HomeStack');
+            }}
+          >
+            <Image
+              source={centralIcon}
+              style={styles.centralIcon}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        )}
+        tabBar={renderTabBar}
+      >
+        <CurvedBottomBar.Screen name="HomeStack" component={HomeStack} position="CENTER"/>
+        <CurvedBottomBar.Screen name="connect" position="LEFT" component={ConnectScreen} options={{ headerShown: false }} />
+        <CurvedBottomBar.Screen name="learn" position="LEFT" component={ZaoLearnScreen} options={{ headerShown: false }}/>
+        <CurvedBottomBar.Screen name="market" position="RIGHT" component={MarketScreen} options={{ headerShown: false }}/>
+        <CurvedBottomBar.Screen name="ai" position="RIGHT" component={ZaoAIScreen} options={{ headerShown: false }} />
+      </CurvedBottomBar.Navigator>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   bottomBar: {
-    backgroundColor: colors.primary,
-    
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
   },
   tab: {
     flex: 1,
@@ -126,31 +126,32 @@ const styles = StyleSheet.create({
   tabLabel: {
     marginTop: spacing.tiny,
     fontSize: 10,
-    color: colors.gray,
+    color: colors.white, // Changed to white
   },
   activeTabLabel: {
-    color: colors.primary,
+    color: colors.white, // Changed to white
     fontWeight: 'bold',
   },
   btnCircleUp: {
     width: 60,
     height: 60,
-    borderRadius: 50,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
-    bottom: 25,
+    backgroundColor: colors.primary[800],
+    bottom: 30,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 1.41,
     elevation: 3,
+    borderWidth: 3,
+    borderColor: colors.white,
   },
   centralIcon: {
     width: 30,
     height: 30,
     tintColor: colors.white,
-    color: colors.white
   },
 });
 

@@ -154,18 +154,20 @@ console.log("ZAO learn", CommunityRepository)
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Courses Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Zao Courses</Text>
-            {courses.map(course => (
-              <CourseCard
-                key={course.id}
-                course={course}
-                onPress={handleCoursePress}
-              />
-            ))}
-            <TouchableOpacity style={styles.viewAllButton}>
-              <Text style={styles.viewAllText}>View All Courses →</Text>
-            </TouchableOpacity>
-          </View>
+  <Text style={styles.sectionTitle}>Zao Courses</Text>
+  <CourseCard 
+    course={{
+      id: 1,
+      title: 'Sustainable Farming',
+      duration: '6 weeks',
+      // images: [] // When using backend, add image URLs here
+    }}
+    onPress={handleCoursePress}
+  />
+  <TouchableOpacity style={styles.viewAllButton}>
+    <Text style={styles.viewAllText}>View All Courses →</Text>
+  </TouchableOpacity>
+</View>
   
           {/* Search Section */}
           {searchQuery && (

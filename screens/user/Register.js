@@ -22,8 +22,8 @@ const Register = () => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [step, setStep] = useState('form'); // 'form', 'verify', 'success'
-  const { setIsRegistered, setUser } = useContext(AuthContext); // Added setUser
+  const [step, setStep] = useState('form'); 
+  const { setIsRegistered, setUser } = useContext(AuthContext); 
   const navigation = useNavigation();
   const viewModel = useMemo(() => container.get('registrationViewModel'), []);
 

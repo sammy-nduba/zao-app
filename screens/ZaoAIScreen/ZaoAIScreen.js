@@ -1,16 +1,15 @@
 import React from 'react';
-import { View, Text, ScrollView, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { colors } from 'config/theme';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import {Header } from '../../components/aiScreen/Header';
+import MainContainer from '../../components/container/MainContainer';
+import ScrollableMainContainer from '../../components/container/ScrollableMainContainer';
+import { Header } from '../../components/aiScreen/Header';
 import { SearchBar } from '../../components/aiScreen/SearchBar';
 import { TabNavigation } from '../../components/aiScreen/TabNavigation';
 import { CapabilityCard } from '../../components/aiScreen/CapabilityCard';
 import { ChatInput } from '../../components/aiScreen/ChatInput';
 import { useZaoAI } from '../../components/aiScreen/useZaoAI';
-// import { styles } from '../../config/styles/ZaoAIStyles';
-
-console.log("Zao AI Screen", useZaoAI)
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 export const ZaoAIScreen = () => {
   const {
@@ -30,123 +29,140 @@ export const ZaoAIScreen = () => {
     handleVoice,
   } = useZaoAI();
 
+
+  const tabBarHeight = useBottomTabBarHeight();
+
   return (
-    <SafeAreaView style={styles.container}>
+    <MainContainer>
+      {/* Fixed Header Section */}
+      <View style={styles.headerSection}>
+        <Header
+          title="Zao AI"
+          onBackPress={handleBackPress}
+          onNotificationPress={handleNotificationPress}
+        />
+        
+        <SearchBar
+          value={searchText}
+          onChangeText={setSearchText}
+          onFilterPress={handleFilterPress}
+          placeholder="Farm"
+        />
+        
+        <TabNavigation
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabPress={setActiveTab}
+        />
+      </View>
 
-
-      <Header
-        title="Zao AI"
-        onBackPress={handleBackPress}
-        onNotificationPress={handleNotificationPress}
-      />
-      
-      <SearchBar
-        value={searchText}
-        onChangeText={setSearchText}
-        onFilterPress={handleFilterPress}
-        placeholder="Farm"
-      />
-      
-      <TabNavigation
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabPress={setActiveTab}
-      />
-      
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
-        <View style={styles.vectorContainer}>
+      {/* Content Area - properly constrained below header */}
+      <View style={styles.contentWrapper}>
+        {/* Background Vector */}
+        <Image 
+          source={require('../../assets/Vector_leaf.png')} 
+          style={styles.backgroundVector}
+        />
+        
+        {/* Scrollable Content - constrained to remaining space */}
+        <ScrollableMainContainer 
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: tabBarHeight + 100 } // Space for chat input and padding
+          ]}
+        >
+          <View style={styles.vectorContainer}>
         <Image source={require('../../assets/Vector_leaf.png')} />
       </View>
-          <View >
-            {/* Replace with your actual logo */}
-            <Image source ={require('../../assets/Ai.png')} style={styles.logo}/>
-            <View style={styles.logo} />
+
+          <View style={styles.logoContainer}>
+            <Image source={require('../../assets/Ai.png')} style={styles.logo}/>
           </View>
           
           <Text style={styles.title}>Zao AI Capabilities</Text>
           
           {capabilities.map((capability, index) => (
             <CapabilityCard
-            
               key={index}
               title={capability.title}
               description={capability.description}
-              
             />
           ))}
           <Text style={styles.footerText}>
             These are just a few examples of what I can do.
           </Text>
-        </View>
-      </ScrollView>
+          </ScrollableMainContainer>
+          </View>
+        
+     
+
+      {/* Fixed Chat Input */}
+      <View style={[styles.chatInputContainer, { bottom: tabBarHeight }]}>
+        <ChatInput
+          value={chatInput}
+          onChangeText={setChatInput}
+          onSend={handleSend}
+          onAttach={handleAttach}
+          onVoice={handleVoice}
+          placeholder="Ask anything"
+        />
+      </View>
       
-      <ChatInput style ={styles.chatInput}
-        value={chatInput}
-        onChangeText={setChatInput}
-        onSend={handleSend}
-        onAttach={handleAttach}
-        onVoice={handleVoice}
-        placeholder="Ask anything"
-      />
-    
-    </SafeAreaView>
+    </MainContainer>
   );
 };
 
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  headerSection: {
     backgroundColor: colors.background,
+    zIndex: 10, // Ensure header stays above other content
   },
-  vectorContainer: {
+  contentWrapper: {
+    flex: 1,
+    // height: 500,
+    position: 'relative',
+  },
+  backgroundVector: {
     position: 'absolute',
     width: '100%',
     height: '100%',
+    opacity: 0.1,
     zIndex: -1,
   },
   
-  vector2: {
+  vectorContainer: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    top: 300,
-    left: 200,
-    opacity: 0.05,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: -1,
   },
-  content: {
-    flex: 1,
+  vectorImage: {
+    width: '100%',
+    height: '100%',
+    opacity: 0.1,
+  },
+  scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 22,
-    alignItems: 'center',
+    paddingTop: 20,
   },
-  // logoContainer: {
-  //   width: 80,
-  //   height: 80,
-  //   borderRadius: 40,
-  //   backgroundColor: 'white',
-  //   justifyContent: 'center',
-  //   alignItems: 'center',
-  //   marginBottom: 24,
-  //   elevation: 3,
-  //   shadowColor: '#000',
-  //   shadowOffset: { width: 0, height: 2 },
-  //   shadowOpacity: 0.1,
-  //   shadowRadius: 4,
-  // },
+  logoContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 30,
+  },
   logo: {
-    top: 20,
     width: 80,
     height: 80,
   },
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#2E2F2E',
-    marginBottom: 32,
+    color: colors.text,
+    marginBottom: 30,
+    textAlign: 'center',
   },
-  
   footerText: {
     fontSize: 12,
     color: '#9CA3AF',
@@ -154,30 +170,13 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 32,
   },
-  chatInput: {
-    marginBottom: 20,
-    
-  }
-  
-  // bottomNav: {
-  //   flexDirection: 'row',
-  //   backgroundColor: '#10B981',
-  //   paddingVertical: 12,
-  //   paddingHorizontal: 16,
-  // },
-  // navButton: {
-  //   flex: 1,
-  //   alignItems: 'center',
-  //   paddingVertical: 8,
-  // },
-  // navIcon: {
-  //   width: 24,
-  //   height: 24,
-  //   marginBottom: 4,
-  // },
-  // navText: {
-  //   fontSize: 12,
-  //   color: 'white',
-  //   fontWeight: '500',
-  // },
+  chatInputContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    marginBottom: 5,
+    marginBottom: 10,
+    backgroundColor: colors.background,
+  },
 });

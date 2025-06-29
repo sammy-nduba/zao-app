@@ -73,7 +73,7 @@ const Home = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+      {/* <StatusBar barStyle="light-content" backgroundColor={colors.background} /> */}
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {state.error && <Text style={styles.errorText}>Error: {state.error}</Text>}
         <GreetingAndWeatherSection weatherData={state.weatherData || { current: null, forecast: [] }} />

@@ -1,5 +1,4 @@
 
-
 export class FarmerRepository {
     async saveFarmer(farmer) {
       throw new Error('saveFarmer must be implemented');

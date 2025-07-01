@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { colors } from '../config/theme';
 import { useNavigation } from '@react-navigation/native';
 import { HomeViewModel } from '../viewModel/HomeViewModel';
 import container from '../infrastructure/di/Container';
+import { AuthContext } from '../utils/AuthContext';
 import GreetingAndWeatherSection from '../components/home/GreetingAndWeatherSection';
 import WeatherForecast from '../components/home/WeatherForecast';
 import AlertCard from '../components/home/AlertCard';
@@ -21,6 +22,7 @@ import Toast from 'react-native-toast-message';
 
 const Home = () => {
   const navigation = useNavigation();
+  const { user } = useContext(AuthContext);
   const [viewModel] = useState(() => new HomeViewModel(
     container.get('getWeatherUseCase'),
     container.get('getNewsUseCase'),
@@ -30,12 +32,18 @@ const Home = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      console.log('Home.js: Loading data');
-      await viewModel.loadData();
+      console.log('Home.js: Loading data for user:', user?.id);
+      await viewModel.loadData(user?.id);
       const newState = viewModel.getState();
       console.log('Home.js: State updated:', newState);
       setState(newState);
-      if (newState.error) {
+      if (newState.isOffline) {
+        Toast.show({
+          type: 'info',
+          text1: 'Offline Mode',
+          text2: 'Displaying cached data. Changes will sync when online.',
+        });
+      } else if (newState.error) {
         Toast.show({
           type: 'error',
           text1: 'Error',
@@ -43,8 +51,17 @@ const Home = () => {
         });
       }
     };
+    if (!user?.id) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please log in to view your dashboard.',
+      });
+      navigation.navigate('Auth');
+      return;
+    }
     loadData();
-  }, [viewModel]);
+  }, [viewModel, user?.id]);
 
   const handleSeeMore = () => {
     console.log('Navigating to MyCropScreen with cropData:', state.dashboardData?.cropData);
@@ -53,7 +70,7 @@ const Home = () => {
 
   const handleCategoryChange = (category) => {
     console.log('Home.js: Changing news category:', category);
-    viewModel.setCategory(category);
+    viewModel.setCategory(category, user?.id);
     setState(viewModel.getState());
   };
 
@@ -72,7 +89,10 @@ const Home = () => {
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {state.error && <Text style={styles.errorText}>Error: {state.error}</Text>}
-        <GreetingAndWeatherSection weatherData={state.weatherData} />
+        <GreetingAndWeatherSection 
+          weatherData={state.weatherData} 
+          userName={user?.firstName || 'User'}
+        />
         <WeatherForecast weatherData={state.weatherData} />
         {state.dashboardData?.alerts?.length ? (
           state.dashboardData.alerts.map((alert) => (
@@ -95,21 +115,19 @@ const Home = () => {
           onCategoryChange={handleCategoryChange}
         />
         <TouchableOpacity
-  style={styles.seeAllButton}
-  onPress={() =>
-    navigation.navigate('MainTabs', {
-      screen: 'HomeStack',
-      params: {
-        screen: 'LatestNewsScreen',
-        params: { category: state.selectedNewsCategory },
-      },
-    })
-  }
->
-  <Text style={styles.seeAllText}>See All</Text>
-</TouchableOpacity>
-
-        
+          style={styles.seeAllButton}
+          onPress={() =>
+            navigation.navigate('MainTabs', {
+              screen: 'HomeStack',
+              params: {
+                screen: 'LatestNewsScreen',
+                params: { category: state.selectedNewsCategory },
+              },
+            })
+          }
+        >
+          <Text style={styles.seeAllText}>See All</Text>
+        </TouchableOpacity>
         <View style={styles.bottomPadding} />
       </ScrollView>
     </SafeAreaView>

@@ -13,7 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nduba.zao",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +31,29 @@
     },
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "685e8fd8-194d-4295-9f3f-372f9f419bf1"
+      },
+      "codePush": {
+        "android": {
+          "codePushKey": "fddac185-a6e9-4c0c-a41b-f2ebee1ada19"
+        },
+        "ios": {
+          "codePushKey": "53957f93-442e-42cf-9ba7-5f0a610f9e43"
+        }
+      }
+    },
+    "owner": "nduba",
+    // "runtimeVersion": {
+    //   "policy": "appVersion"
+
+    // },
+    "runtimeVersion": "1.0.0",
+    
+    "updates": {
+      "url": "https://u.expo.dev/685e8fd8-194d-4295-9f3f-372f9f419bf1"
+    }
   }
 }

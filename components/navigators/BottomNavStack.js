@@ -4,10 +4,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CurvedBottomBar } from 'react-native-curved-bottom-bar';
 import { colors, spacing } from '../../config/theme';
 import { useNavigation } from '@react-navigation/native';
-import ConnectScreen from '../../screens/insights/connect/ConnectScreen';
-import LearnScreen from '../../screens/insights/learn/LearnScreen';
-import MarketScreen from '../../screens/insights/market/MarketScreen';
-import {ZaoAIScreen } from '../../screens';
+import ConnectScreen from '../../screens/connect/ConnectScreen';
+import LearnScreen from '../../screens/zaoLearn/ZaoLearnScreen';
+import MarketScreen  from '../../screens/market/MarketScreen';
+import {ZaoAIScreen} from '../../screens/ZaoAIScreen/ZaoAIScreen';
 import HomeStack from './HomeStack';
 
 const centralIcon = require('../../assets/insights/cropImage.png');

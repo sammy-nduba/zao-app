@@ -23,7 +23,7 @@ const Register = () => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { setIsRegistered } = useContext(AuthContext);
+  const { setIsRegistered, setUser } = useContext(AuthContext);
   const navigation = useNavigation();
   const viewModel = useMemo(() => new RegistrationViewModel(
     container.get('registerUserUseCase'),
@@ -40,7 +40,6 @@ const Register = () => {
   const handleFieldChange = (fieldName, value) => {
     setFormData(prev => ({ ...prev, [fieldName]: value }));
 
-    // Real-time validation
     let error = '';
     if (fieldName === 'phoneNumber') {
       const { isValid, error: phoneError } = viewModel.validatePhoneNumber(value);
@@ -56,68 +55,70 @@ const Register = () => {
     setFieldErrors(prev => ({ ...prev, [fieldName]: error }));
   };
 
-  // src/screens/Register.js
-const handleRegister = async () => {
-  setIsLoading(true);
-  setFieldErrors({});
-
-  try {
-    console.log('Submitting registration:', formData); // Debug
-    const result = await viewModel.register(formData);
-    
-    if (result.success) {
-      console.log('Registration success, setting isRegistered'); // Debug
-      setIsRegistered(true);
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Registration successful! Please set up your farm details.',
-      });
-      navigation.replace('MainTabs');
-    } else {
-      console.log('Registration failed:', result.error); // Debug
-      const errors = result.error.split(': ')[1]?.split(', ') || [result.error];
-      const newFieldErrors = {};
-      
-      errors.forEach(error => {
-        if (error.includes('First name')) newFieldErrors.firstName = error;
-        else if (error.includes('Last name')) newFieldErrors.lastName = error;
-        else if (error.includes('Email') || error.includes('email')) newFieldErrors.email = error;
-        else if (error.includes('phone')) newFieldErrors.phoneNumber = error;
-        else if (error.includes('Password') || error.includes('password')) newFieldErrors.password = error;
-      });
-      
-      setFieldErrors(newFieldErrors);
-      
+  const handleRegister = async () => {
+    setIsLoading(true);
+    setFieldErrors({});
+    try {
+      console.log('Completing registration:', formData);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Client timeout')), 15000)
+      );
+      const result = await Promise.race([viewModel.register(formData), timeoutPromise]);
+      console.log('Register result:', result);
+      if (result.success) {
+        setIsRegistered(true);
+        setUser({
+          id: result.user.id,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber,
+        });
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Registration successful! Please set up your farm details.',
+        });
+        navigation.navigate('FarmDetails');
+      } else {
+        setFieldErrors(result.fieldErrors || {});
+        Toast.show({
+          type: 'error',
+          text1: 'Registration Failed',
+          text2: result.error || 'Please check your information and try again',
+        });
+      }
+    } catch (error) {
+      console.error('Registration error:', error.message);
       Toast.show({
         type: 'error',
-        text1: 'Registration Failed',
-        text2: errors[0] || 'Please check your information and try again',
+        text1: 'Error',
+        text2: error.message.includes('502')
+          ? 'Server is currently unavailable. Please try again later.'
+          : error.message.includes('timed out')
+          ? 'Request timed out. Please check your connection.'
+          : error.message.includes('AsyncStorage')
+          ? 'Storage error. Please try again.'
+          : error.message,
       });
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error('Unexpected registration error:', error.message); // Debug
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      text2: error.message.includes('AsyncStorage') 
-        ? 'Storage error. Please try again.'
-        : error.message,
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const handleSocialRegister = async (provider) => {
     setIsLoading(true);
-    
     try {
-      console.log('Social register:', provider); // Debug
+      console.log('Social register:', provider);
       const result = await viewModel.socialRegister(provider);
-      
       if (result.success) {
         setIsRegistered(true);
+        setUser({
+          id: result.user.id,
+          firstName: result.user.firstName || 'User',
+          lastName: result.user.lastName,
+          email: result.user.email,
+        });
         Toast.show({
           type: 'success',
           text1: 'Success',
@@ -125,7 +126,7 @@ const handleRegister = async () => {
         });
         navigation.navigate('Login');
       } else {
-        console.log('Social registration failed:', result.error); // Debug
+        console.log('Social registration failed:', result.error);
         Toast.show({
           type: 'error',
           text1: 'Registration Failed',
@@ -133,7 +134,7 @@ const handleRegister = async () => {
         });
       }
     } catch (error) {
-      console.error('Unexpected social registration error:', error); // Debug
+      console.error('Unexpected social registration error:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -252,18 +253,22 @@ const handleRegister = async () => {
 
         {/* Password Requirements */}
         <View style={styles.passwordRequirements}>
-          <StyledText style={styles.requirementText}>Password strength</StyledText>
-          <StyledText style={styles.requirementCount}>{`${metRequirementsCount}/5`}</StyledText>
-          {passwordRequirements.map(({ label, met }, index) => (
-            <StyledText
-              key={index}
-              style={[styles.requirementItem, met && styles.requirementMet]}
-            >
-              {label}
-            </StyledText>
-          ))}
+          <View style={styles.requirementsHeader}>
+            <StyledText style={styles.requirementText}>Password strength</StyledText>
+            <StyledText style={styles.requirementCount}>{`${metRequirementsCount}/5`}</StyledText>
+          </View>
+          <View style={styles.requirementsGrid}>
+            {passwordRequirements.map(({ label, met }, index) => (
+              <StyledText
+                key={index}
+                style={[styles.requirementItem, met && styles.requirementMet]}
+              >
+                {label}
+              </StyledText>
+            ))}
+          </View>
         </View>
-        
+
         {/* Terms */}
         <View style={styles.termsContainer}>
           <StyledText style={styles.termsText}>
@@ -298,31 +303,34 @@ const handleRegister = async () => {
 
       {/* Social Buttons */}
       <View style={styles.socialButtonsContainer}>
-        <StyledButton
-          title="Continue with Google"
-          icon="google"
-          onPress={() => handleSocialRegister('Google')}
-          isSocial
-          style={styles.socialButton}
-          disabled={isLoading}
-        />
-        <StyledButton
-          title="Continue with Facebook"
-          icon="facebook"
-          onPress={() => handleSocialRegister('Facebook')}
-          isSocial
-          style={styles.socialButton}
-          disabled={isLoading}
-        />
-        <StyledButton
-          title="Continue with Apple"
-          icon="apple1"
-          onPress={() => handleSocialRegister('Apple')}
-          isSocial
-          style={styles.socialButton}
-          disabled={isLoading}
-        />
-      </View>
+  <StyledButton
+    title="Continue with Google"
+    icon="google"
+    iconColor="#DB4437"
+    onPress={() => handleSocialRegister('Google')}
+    isSocial
+    style={styles.socialButton}
+    disabled={isLoading}
+  />
+  <StyledButton
+    title="Continue with Facebook"
+    icon="facebook-box"
+    iconColor="#1877F2"
+    onPress={() => handleSocialRegister('Facebook')}
+    isSocial
+    style={styles.socialButton}
+    disabled={isLoading}
+  />
+  <StyledButton
+    title="Continue with Apple"
+    icon="apple"
+    iconColor="#000000"
+    onPress={() => handleSocialRegister('Apple')}
+    isSocial
+    style={styles.socialButton}
+    disabled={isLoading}
+  />
+</View>
 
       {/* Login Link */}
       <View style={styles.loginContainer}>
@@ -420,15 +428,29 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     width: '100%',
     marginBottom: 20,
-    gap: 8,
-    position: 'relative',
+  },
+  requirementsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   requirementText: {
     fontFamily: 'Roboto',
     fontSize: 14,
     color: colors.grey[600],
     fontWeight: '600',
-    marginBottom: 8,
+  },
+  requirementCount: {
+    fontFamily: 'Roboto',
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: colors.primary[600],
+  },
+  requirementsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   requirementItem: {
     fontFamily: 'Roboto',
@@ -436,26 +458,18 @@ const styles = StyleSheet.create({
     color: colors.grey[600],
     fontWeight: '400',
     letterSpacing: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderColor: colors.grey[300],
     borderWidth: 1,
-    borderRadius: 24,
+    borderRadius: 16,
     textAlign: 'center',
-    textAlignVertical: 'center',
+    width: '48%', // Two columns with spacing
+    marginBottom: 8,
   },
   requirementMet: {
     color: colors.primary[600],
     borderColor: colors.primary[600],
-  },
-  requirementCount: {
-    fontFamily: 'Roboto',
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: colors.primary[600],
-    position: 'absolute',
-    top: 16,
-    right: 16,
   },
   termsContainer: {
     marginBottom: 24,

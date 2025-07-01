@@ -226,6 +226,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: colors.background,
     paddingHorizontal: 24,
+    flex: 1
   },
   vectorContainer: {
     position: 'absolute',
@@ -358,7 +359,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginVertical: 24,
-    backgroundColor: colors.background
+    backgroundColor: colors.background,
+    marginBottom: 80
+    
   },
   registerText: {
     fontFamily: 'Roboto',

@@ -43,20 +43,46 @@ const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
   };
 
   const handleGetStarted = async () => {
-    const success = await viewModel.submitForm();
-    if (success) {
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Form submitted! Welcome to your dashboard.',
-      });
-      navigation.navigate('Login');
-    } else {
+    if (!userId) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: viewModel.getState().error,
+        text2: 'User not authenticated. Please register first.',
       });
+      navigation.navigate('Register');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const success = await viewModel.submitForm(userId);
+      if (success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: viewModel.getState().isOffline
+            ? 'Data saved locally. Will sync when online.'
+            : 'Form submitted! Welcome to your dashboard.',
+        });
+        navigation.navigate('Login');
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: viewModel.getState().isOffline
+            ? 'Data saved locally. Will sync when online.'
+            : viewModel.getState().error,
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message.includes('502') || error.message.includes('timed out')
+          ? 'Data saved locally. Will sync when online.'
+          : error.message,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 

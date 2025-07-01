@@ -15,6 +15,8 @@ import container from './infrastructure/di/Container';
 import { AuthViewModel } from './viewModel/AuthViewModel';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './infrastructure/i18n/i18n';
+import { SyncService } from './utils/SyncService';
+// import codePush from 'react-native-code-push'; // Import codePush only
 
 const Stack = createStackNavigator();
 
@@ -33,7 +35,7 @@ const ErrorBoundary = ({ children }) => {
   }
 };
 
-export default function App() {
+function App() {
   const navigationRef = useNavigationContainerRef();
   const [appReady, setAppReady] = useState(false);
   const [i18nReady, setI18nReady] = useState(false);
@@ -66,7 +68,10 @@ export default function App() {
 
   useEffect(() => {
     prepareApp();
-  }, [prepareApp]);
+    // Start background sync for offline data when user is available
+    const unsubscribe = authState.user?.id ? SyncService.startSync(authState.user.id) : () => {};
+    return () => unsubscribe();
+  }, [prepareApp, authState.user?.id]);
 
   const contextValue = {
     ...authState,
@@ -137,3 +142,12 @@ export default function App() {
     </I18nextProvider>
   );
 }
+
+// const codePushOptions = {
+//   checkFrequency: 0, // ON_APP_START
+//   installMode: 1, // ON_NEXT_RESTART
+// };
+
+// // Log CodePush for debugging
+// console.log('codePush:', codePush);
+export default App;

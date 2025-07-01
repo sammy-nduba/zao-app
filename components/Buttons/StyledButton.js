@@ -3,9 +3,61 @@ import { TouchableOpacity, StyleSheet } from 'react-native';
 import StyledText from '../Texts/StyledText';
 import { colors } from '../../config/theme';
 import { AntDesign } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-
-const StyledButton = ({ title, icon, onPress, style, isSocial = false, disabled = false }) => {
+const StyledButton = ({
+  title,
+  icon,
+  onPress,
+  style,
+  isSocial = false,
+  disabled = false,
+}) => {
+  // Choose icon set and color
+  const renderIcon = () => {
+    if (!icon) return null;
+  
+    switch (icon) {
+      case 'google':
+        return (
+          <MaterialCommunityIcons
+            name="google"
+            size={28} // Bolder
+            color="#DB4437"
+            style={styles.icon}
+          />
+        );
+      case 'facebook-box':
+      case 'facebook':
+        return (
+          <MaterialCommunityIcons
+            name="facebook"
+            size={24}
+            color="#1877F2"
+            style={styles.icon}
+          />
+        );
+      case 'apple':
+        return (
+          <MaterialCommunityIcons
+            name="apple"
+            size={24}
+            color="#000"
+            style={styles.icon}
+          />
+        );
+      default:
+        return (
+          <AntDesign
+            name={icon}
+            size={24}
+            color={isSocial ? colors.grey[800] : '#FFFFFF'}
+            style={styles.icon}
+          />
+        );
+    }
+  };
+  
   return (
     <TouchableOpacity
       style={[
@@ -17,24 +69,11 @@ const StyledButton = ({ title, icon, onPress, style, isSocial = false, disabled 
       onPress={onPress}
       disabled={disabled}
     >
-      {icon && (
-        <AntDesign
-          name={icon}
-          size={24}
-          color={isSocial ? colors.grey[800] : '#FFFFFF'}
-          style={styles.icon}
-        />
-      )}
+      {renderIcon()}
       <StyledText style={[styles.buttonText, isSocial && styles.socialButtonText]}>
         {title}
-
-  
-
       </StyledText>
-
-      
     </TouchableOpacity>
-
   );
 };
 

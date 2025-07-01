@@ -11,6 +11,7 @@ export class FarmDetailsViewModel {
       formData: new Farmer({}),
       isLoading: false,
       error: null,
+      isOffline: false,
     };
   }
 
@@ -33,29 +34,40 @@ export class FarmDetailsViewModel {
     });
   }
 
-  async loadFarmerData(farmerType) {
+  async loadFarmerData(farmerType, userId) {
+    if (!userId) {
+      this.state.error = 'User ID is required';
+      return;
+    }
     this.state.isLoading = true;
+    this.state.error = null;
     try {
-      const farmer = await this.getFarmerData.execute(farmerType);
+      const farmer = await this.getFarmerData.execute(farmerType, userId);
       if (farmer) {
         this.state.formData = farmer;
       }
     } catch (error) {
       this.state.error = error.message;
+      this.state.isOffline = error.message.includes('offline');
     } finally {
       this.state.isLoading = false;
     }
   }
 
-  async submitForm() {
+  async submitForm(userId) {
+    if (!userId) {
+      this.state.error = 'User ID is required';
+      return false;
+    }
     this.state.isLoading = true;
     this.state.error = null;
     try {
       await this.validateFarmerData.execute(this.state.formData);
-      await this.saveFarmerData.execute(this.state.formData);
+      await this.saveFarmerData.execute(this.state.formData, userId);
       return true;
     } catch (error) {
       this.state.error = error.message;
+      this.state.isOffline = error.message.includes('502') || error.message.includes('timed out');
       return false;
     } finally {
       this.state.isLoading = false;

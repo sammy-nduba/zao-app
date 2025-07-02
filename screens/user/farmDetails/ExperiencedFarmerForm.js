@@ -15,6 +15,18 @@ const ExperiencedFarmerForm = ({ viewModel, formData, onFormChange, navigation }
   const farmSizeOptions = ['0-5 acres (Small Scale)', '5-20 acres (Medium Scale)', '20+ acres (Large Scale)'];
   const fertilizerOptions = ['CAN', 'DSP', 'NPK', 'Other'];
 
+  const isFormValid = () => {
+    return (
+      formData.selectedCrops.length > 0 &&
+      formData.farmSize &&
+      formData.location &&
+      formData.cropAge &&
+      formData.lastManure &&
+      formData.fertilizer &&
+      formData.cropPhase
+    );
+  };
+
   const handleCropChange = (crop) => {
     const newCrops = formData.selectedCrops.includes(crop)
       ? formData.selectedCrops.filter((item) => item !== crop)
@@ -236,7 +248,7 @@ const handleGetStarted = async () => {
         title="Get Started"
         onPress={handleGetStarted}
         style={styles.getStartedButton}
-        disabled={viewModel.getState().isLoading}
+        disabled={viewModel.getState().isLoading || !isFormValid()}
       />
     </ScrollableMainContainer>
   );

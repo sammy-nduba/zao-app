@@ -31,13 +31,13 @@ export class RegistrationViewModel {
     this.state.isLoading = true;
     this.state.fieldErrors = {};
     try {
-      console.log('RegistrationViewModel.register called with:', formData); // Debug
+      console.log('RegistrationViewModel.register called with:', formData);
       const user = await this.registerUseCase.execute(formData);
-      console.log('Registration successful, user:', user); // Debug
+      console.log('Registration successful, user:', user);
       this.state.isRegistered = true;
-      return { success: true, user };
+      return { success: true, user: { ...user, token: user.token } }; // Ensure token is included
     } catch (error) {
-      console.error('Registration error:', error.message); // Debug
+      console.error('Registration error:', error.message);
       const errors = error.message.split(': ')[1]?.split(', ') || [error.message];
       const newFieldErrors = {};
       errors.forEach(error => {
@@ -48,7 +48,7 @@ export class RegistrationViewModel {
         else if (error.includes('Password') || error.includes('password')) newFieldErrors.password = error;
       });
       this.state.fieldErrors = newFieldErrors;
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, fieldErrors: newFieldErrors };
     } finally {
       this.state.isLoading = false;
     }
@@ -57,12 +57,12 @@ export class RegistrationViewModel {
   async socialRegister(provider) {
     this.state.isLoading = true;
     try {
-      console.log('Social register called for:', provider); // Debug
+      console.log('Social register called for:', provider);
       const user = await this.socialRegisterUseCase.execute(provider);
       this.state.isRegistered = true;
       return { success: true, user, provider };
     } catch (error) {
-      console.error('Social registration error:', error.message); // Debug
+      console.error('Social registration error:', error.message);
       return { success: false, error: error.message };
     } finally {
       this.state.isLoading = false;

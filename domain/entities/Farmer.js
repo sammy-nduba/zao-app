@@ -3,7 +3,7 @@
 
 export class Farmer {
   constructor({
-    farmerType = 'new',
+    farmerType = '',
     location = '',
     selectedCrops = [],
     farmSize = '0-5 acres (Small Scale)',

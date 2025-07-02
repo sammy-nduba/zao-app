@@ -6,6 +6,7 @@ import { GetFarmerData } from '../../domain/UseCases/farmer/GetFarmerData';
 import { ApiUserRepository } from '../../data/repositories/ApiUserRepository';
 import { StorageService } from '../../infrastructure/storage/StorageService';
 import { SocialAuthService } from '../../data/repositories/SocialAuthService';
+import { VerifyEmailUseCase } from '../../domain/UseCases/user/RegisterUserUseCase';
 import { RegisterUserUseCase } from '../../domain/UseCases/user/RegisterUserUseCase';
 import { SocialRegisterUseCase } from '../../domain/UseCases/user/RegisterUserUseCase';
 import { ValidationService } from '../../services/ValidationService';
@@ -29,98 +30,124 @@ import { LanguageSelectionPresenter } from '../../viewModel/LanguageSelectionPre
 class Container {
   constructor() {
     this.dependencies = new Map();
-    console.log('Container: Initializing');
+    this.isInitialized = false;
+    console.log('Container: Constructor called');
+  }
+
+  async initialize() {
+    if (this.isInitialized) {
+      console.log('Container: Already initialized');
+      return;
+    }
     try {
-      this.register();
+      console.log('Container: Starting registration');
+      await this.register();
+      console.log('Container: Register complete, initializing StorageService');
+      await this.dependencies.get('storageService').initialize();
+      this.isInitialized = true;
       console.log('Container: Initialized successfully');
     } catch (error) {
-      console.error('Container: Initialization failed', error);
+      console.error('Container: Initialization failed:', error);
       throw error;
     }
   }
 
-  register() {
-    // Api Clients
-    this.dependencies.set('weatherApiClient', new ApiClient('http://api.weatherapi.com/v1'));
-    this.dependencies.set('newsApiClient', new ApiClient('https://newsapi.org/v2'));
-    this.dependencies.set('appApiClient', new ApiClient('https://zao-backend-api.onrender.com'));
+  async register() {
+    try {
+      // Register independent dependencies
+      console.log('Container: Registering API clients');
+      const weatherApiClient = new ApiClient('http://api.weatherapi.com/v1');
+      const newsApiClient = new ApiClient('https://newsapi.org/v2');
+      const appApiClient = new ApiClient('https://zao-backend-api.onrender.com');
+      this.dependencies.set('weatherApiClient', weatherApiClient);
+      this.dependencies.set('newsApiClient', newsApiClient);
+      this.dependencies.set('appApiClient', appApiClient);
 
+      console.log('Container: Registering storage service');
+      const storageService = new StorageService();
+      this.dependencies.set('storageService', storageService);
 
-    // Farmer dependencies
-    this.dependencies.set('asyncStorageFarmerRepository', new AsyncStorageFarmerRepository());
-    this.dependencies.set('apiFarmerRepository', new ApiFarmerRepository(this.get('appApiClient')));
-    this.dependencies.set('saveFarmerData', new SaveFarmerData(
-      this.get('apiFarmerRepository'),
-      this.get('asyncStorageFarmerRepository')
-    ));
-    this.dependencies.set('validateFarmerData', new ValidateFarmerData());
-    this.dependencies.set('getFarmerData', new GetFarmerData(
-      this.get('apiFarmerRepository'),
-      this.get('asyncStorageFarmerRepository')
-    ));
+      console.log('Container: Registering validation service');
+      const validationService = new ValidationService();
+      this.dependencies.set('validationService', validationService);
 
-    // User dependencies
-    this.dependencies.set('validationService', new ValidationService());
-    this.dependencies.set('userRepository', new ApiUserRepository(this.get('appApiClient')));
-    this.dependencies.set('socialAuthService', new SocialAuthService(this.get('appApiClient')));
-    this.dependencies.set('storageService', new StorageService());
-    this.dependencies.set('registerUserUseCase', new RegisterUserUseCase(
-      this.get('userRepository'),
-      this.get('validationService'),
-      this.get('storageService')
-    ));
-    this.dependencies.set('socialRegisterUseCase', new SocialRegisterUseCase(
-      this.get('socialAuthService'),
-      this.get('storageService')
-    ));
-    this.dependencies.set('loginUserUseCase', new LoginUserUseCase(
-      this.get('userRepository'),
-      this.get('validationService'),
-      this.get('storageService')
-    ));
-    this.dependencies.set('socialLoginUseCase', new SocialLoginUseCase(
-      this.get('socialAuthService'),
-      this.get('storageService')
-    ));
+      console.log('Container: Registering repositories');
+      const asyncStorageFarmerRepository = new AsyncStorageFarmerRepository();
+      const apiFarmerRepository = new ApiFarmerRepository(appApiClient);
+      const userRepository = new ApiUserRepository(appApiClient);
+      const socialAuthService = new SocialAuthService(appApiClient);
+      const weatherRepository = new ApiWeatherRepository(weatherApiClient);
+      const asyncStorageWeatherRepository = new AsyncStorageWeatherRepository();
+      const newsRepository = new ApiNewsRepository(newsApiClient);
+      const asyncStorageNewsRepository = new AsyncStorageNewsRepository();
+      const dashboardRepository = new LocalDashboardRepository();
+      const languageRepository = new LanguageRepositoryImpl();
+      this.dependencies.set('asyncStorageFarmerRepository', asyncStorageFarmerRepository);
+      this.dependencies.set('apiFarmerRepository', apiFarmerRepository);
+      this.dependencies.set('userRepository', userRepository);
+      this.dependencies.set('socialAuthService', socialAuthService);
+      this.dependencies.set('weatherRepository', weatherRepository);
+      this.dependencies.set('asyncStorageWeatherRepository', asyncStorageWeatherRepository);
+      this.dependencies.set('newsRepository', newsRepository);
+      this.dependencies.set('asyncStorageNewsRepository', asyncStorageNewsRepository);
+      this.dependencies.set('dashboardRepository', dashboardRepository);
+      this.dependencies.set('languageRepository', languageRepository);
 
-    // Home screen dependencies
-    this.dependencies.set('weatherRepository', new ApiWeatherRepository(this.get('weatherApiClient')));
-    this.dependencies.set('asyncStorageWeatherRepository', new AsyncStorageWeatherRepository());
-    this.dependencies.set('newsRepository', new ApiNewsRepository(this.get('newsApiClient')));
-    this.dependencies.set('asyncStorageNewsRepository', new AsyncStorageNewsRepository());
-    this.dependencies.set('dashboardRepository', new LocalDashboardRepository());
-    this.dependencies.set('getWeatherUseCase', new GetWeatherUseCase(
-      this.get('weatherRepository'),
-      this.get('asyncStorageWeatherRepository')
-    ));
-    this.dependencies.set('getNewsUseCase', new GetNewsUseCase(
-      this.get('newsRepository'),
-      this.get('asyncStorageNewsRepository')
-    ));
-    this.dependencies.set('getDashboardDataUseCase', new GetDashboardDataUseCase(
-      this.get('dashboardRepository'),
-      this.get('asyncStorageFarmerRepository')
-    ));
+      console.log('Container: Registering use cases');
+      console.log('Container: Registering saveFarmerData');
+      this.dependencies.set('saveFarmerData', new SaveFarmerData(apiFarmerRepository, asyncStorageFarmerRepository));
+      console.log('Container: Registering validateFarmerData');
+      this.dependencies.set('validateFarmerData', new ValidateFarmerData());
+      console.log('Container: Registering getFarmerData');
+      this.dependencies.set('getFarmerData', new GetFarmerData(apiFarmerRepository, asyncStorageFarmerRepository));
+      console.log('Container: Registering registerUserUseCase');
+      this.dependencies.set('registerUserUseCase', new RegisterUserUseCase(userRepository, validationService, storageService));
+      console.log('Container: Registering socialRegisterUseCase');
+      this.dependencies.set('socialRegisterUseCase', new SocialRegisterUseCase(socialAuthService, storageService));
+      console.log('Container: Registering loginUserUseCase');
+      this.dependencies.set('loginUserUseCase', new LoginUserUseCase(userRepository, validationService, storageService));
+      console.log('Container: Registering socialLoginUseCase');
+      this.dependencies.set('socialLoginUseCase', new SocialLoginUseCase(socialAuthService, storageService));
+      // console.log('Container: Registering verifyEmailUseCase');
+      // this.dependencies.set('verifyEmailUseCase', new VerifyEmailUseCase(userRepository));
+      console.log('Container: Registering getWeatherUseCase');
+      this.dependencies.set('getWeatherUseCase', new GetWeatherUseCase(weatherRepository, asyncStorageWeatherRepository));
+      console.log('Container: Registering getNewsUseCase');
+      this.dependencies.set('getNewsUseCase', new GetNewsUseCase(newsRepository, asyncStorageNewsRepository));
+      console.log('Container: Registering getDashboardDataUseCase');
+      this.dependencies.set('getDashboardDataUseCase', new GetDashboardDataUseCase(dashboardRepository, asyncStorageFarmerRepository));
+      console.log('Container: Registering getAvailableLanguagesUseCase');
+      this.dependencies.set('getAvailableLanguagesUseCase', new GetAvailableLanguagesUseCase(languageRepository));
+      console.log('Container: Registering selectLanguageUseCase');
+      this.dependencies.set('selectLanguageUseCase', new SelectLanguageUseCase(languageRepository));
+      console.log('Container: Registering getSelectedLanguageUseCase');
+      this.dependencies.set('getSelectedLanguageUseCase', new GetSelectedLanguageUseCase(languageRepository));
+      console.log('Container: Registering languageSelectionPresenter');
+      this.dependencies.set('languageSelectionPresenter', new LanguageSelectionPresenter(
+        this.dependencies.get('getAvailableLanguagesUseCase'),
+        this.dependencies.get('selectLanguageUseCase'),
+        this.dependencies.get('getSelectedLanguageUseCase')
+      ));
 
-    // Language selection dependencies
-    this.dependencies.set('languageRepository', new LanguageRepositoryImpl());
-    this.dependencies.set('getAvailableLanguagesUseCase', new GetAvailableLanguagesUseCase(this.get('languageRepository')));
-    this.dependencies.set('selectLanguageUseCase', new SelectLanguageUseCase(this.get('languageRepository')));
-    this.dependencies.set('getSelectedLanguageUseCase', new GetSelectedLanguageUseCase(this.get('languageRepository')));
-    this.dependencies.set('languageSelectionPresenter', new LanguageSelectionPresenter(
-      this.get('getAvailableLanguagesUseCase'),
-      this.get('selectLanguageUseCase'),
-      this.get('getSelectedLanguageUseCase')
-    ));
+      console.log('Container: Register complete');
+    } catch (error) {
+      console.error('Container: Register failed:', error);
+      throw error;
+    }
   }
 
   get(key) {
+    if (!this.isInitialized) {
+      console.error(`Container: Attempted to get ${key} before initialization`);
+      throw new Error('Container not initialized. Call initialize() first.');
+    }
     if (!this.dependencies.has(key)) {
+      console.error(`Container: Dependency ${key} not found`);
       throw new Error(`Dependency ${key} not found`);
     }
     return this.dependencies.get(key);
   }
 }
 
-const container = new Container();
-export default container;
+const containerInstance = new Container();
+export default containerInstance;

@@ -18,6 +18,7 @@ import WeatherForecast from '../components/home/WeatherForecast';
 import AlertCard from '../components/home/AlertCard';
 import CropSummary from '../components/home/CropSummary';
 import NewsSection from '../components/home/NewsSection';
+import ProfileDropdownMenu from '../components/ProfileDropDownMenu';
 import Toast from 'react-native-toast-message';
 
 const Home = () => {
@@ -86,7 +87,17 @@ const Home = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+      {/* <StatusBar barStyle="light-content" backgroundColor={colors.background} /> */}
+      <ProfileDropdownMenu onSelectOption={(option) => {
+        if (option === 'logout') {
+    // Handle logout
+    } else if (option === 'profile') {
+      navigation.navigate('ProfileScreen'); // Ensure this route exists
+  } else if (option === 'settings') {
+    navigation.navigate('SettingsScreen');
+  }
+}} />
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {state.error && <Text style={styles.errorText}>Error: {state.error}</Text>}
         <GreetingAndWeatherSection 

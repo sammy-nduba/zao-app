@@ -9,7 +9,7 @@ export class VerificationService {
     async handleVerificationToken(token) {
       try {
         const result = await this.api.verifyEmail(token);
-        this.navigation.navigate('SuccessScreen');
+        this.navigation.navigate('FarmDetails');
         return result;
       } catch (error) {
         this.navigation.navigate('ErrorScreen', { 

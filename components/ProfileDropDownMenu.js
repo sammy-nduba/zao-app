@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Modal } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { colors } from '../../config/theme';
+import { colors } from '../config/theme';
 
 const ProfileDropdownMenu = ({ onSelectOption }) => {
   const [modalVisible, setModalVisible] = useState(false);

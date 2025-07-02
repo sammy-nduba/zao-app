@@ -11,7 +11,7 @@ export { default as ConnectScreen } from './connect/ConnectScreen';
 export { default as LearnScreen } from './zaoLearn/ZaoLearnScreen';
 export { default as MarketScreen } from './market/MarketScreen';
 export { default as ZaoAIScreen } from './ZaoAIScreen/ZaoAIScreen';
-export {default as EmailVerificationScreen} from './user/EmailVerificationScreen'
+export {default as EmailVerification} from './user/EmailVerification'
 
 
 // console.log("User Index:", Register, FarmDetails)

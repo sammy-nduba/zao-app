@@ -8,10 +8,20 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
+const NewFarmerForm = ({ viewModel, formData, onFormChange, onSubmit, userId }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const farmSizeOptions = ['0-5 acres (Small Scale)', '5-20 acres (Medium Scale)', '20+ acres (Large Scale)'];
+
+  const isFormValid = () => {
+    return (
+      formData.selectedCrops.length > 0 &&
+      formData.farmSize &&
+      formData.location &&
+      formData.lastManure &&
+      formData.cropPhase
+    );
+  };
 
   const handleCropChange = (crop) => {
     const newCrops = formData.selectedCrops.includes(crop)
@@ -42,50 +52,6 @@ const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
     });
   };
 
-  const handleGetStarted = async () => {
-    if (!userId) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'User not authenticated. Please register first.',
-      });
-      navigation.navigate('Register');
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const success = await viewModel.submitForm(userId);
-      if (success) {
-        Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: viewModel.getState().isOffline
-            ? 'Data saved locally. Will sync when online.'
-            : 'Form submitted! Welcome to your dashboard.',
-        });
-        navigation.navigate('Login');
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: viewModel.getState().isOffline
-            ? 'Data saved locally. Will sync when online.'
-            : viewModel.getState().error,
-        });
-      }
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: error.message.includes('502') || error.message.includes('timed out')
-          ? 'Data saved locally. Will sync when online.'
-          : error.message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
       <View style={styles.section}>
@@ -103,7 +69,6 @@ const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
           toggleCropSelection={handleCropChange}
         />
       </View>
-
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>
           How many acres do you intend to farm on?
@@ -129,7 +94,6 @@ const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
           ))}
         </View>
       </View>
-
       <View style={styles.section}>
         <StyledText style={styles.sectionTitle}>Where is your farm located?</StyledText>
         <View style={styles.inputContainer}>
@@ -144,9 +108,10 @@ const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
-
       <View style={styles.section}>
-        <StyledText style={styles.sectionTitle}>When was the last time you applied manure?</StyledText>
+        <StyledText style={styles.sectionTitle}>
+          When was the last time you applied manure?
+        </StyledText>
         <View style={styles.inputContainer}>
           <StyledTextInput
             placeholder="Select date..."
@@ -164,7 +129,6 @@ const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
             <MaterialCommunityIcons name="calendar" size={24} color={colors.grey[600]} />
           </TouchableOpacity>
         </View>
-        
         {showDatePicker && (
           <DateTimePicker
             value={selectedDate}
@@ -178,9 +142,10 @@ const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
           />
         )}
       </View>
-
       <View style={styles.section}>
-        <StyledText style={styles.sectionTitle}>What is the current phase of your crop?</StyledText>
+        <StyledText style={styles.sectionTitle}>
+          What is the current phase of your crop?
+        </StyledText>
         <StyledTextInput
           placeholder="Enter crop phase (e.g., Vegetative)"
           value={formData.cropPhase}
@@ -188,16 +153,16 @@ const NewFarmerForm = ({ viewModel, formData, onFormChange, navigation }) => {
           style={styles.input}
         />
       </View>
-
       <StyledButton
         title="Get Started"
-        onPress={handleGetStarted}
+        onPress={onSubmit}
         style={styles.getStartedButton}
-        disabled={viewModel.getState().isLoading}
+        disabled={viewModel.getState().isLoading || !isFormValid()}
       />
     </ScrollableMainContainer>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

@@ -1,3 +1,4 @@
+// In FarmDetails.js
 import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, Image } from 'react-native';
 import { ScrollableMainContainer, FarmerTypeInput } from '../../../components';
@@ -10,13 +11,22 @@ import { AuthContext } from '../../../utils/AuthContext';
 import Toast from 'react-native-toast-message';
 
 const FarmDetails = ({ navigation }) => {
-  const { user } = useContext(AuthContext);
+  const { user, isVerified, setIsRegistrationComplete } = useContext(AuthContext);
   const [viewModel] = useState(() => new FarmDetailsViewModel());
   const [state, setState] = useState(viewModel.getState());
 
   useEffect(() => {
+    if (!user?.id || !isVerified) {
+      navigation.replace('Registration');
+      Toast.show({
+        type: 'error',
+        text1: 'Authentication Required',
+        text2: 'Please complete registration and verify your email.',
+      });
+      return;
+    }
     const loadData = async () => {
-      await viewModel.loadFarmerData(state.farmerType, user?.id);
+      await viewModel.loadFarmerData(state.farmerType, user.id);
       setState(viewModel.getState());
       if (state.isOffline || viewModel.getState().error?.includes('offline')) {
         Toast.show({
@@ -32,17 +42,8 @@ const FarmDetails = ({ navigation }) => {
         });
       }
     };
-    if (!user?.id) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Please complete registration first.',
-      });
-      navigation.navigate('Register');
-      return;
-    }
     loadData();
-  }, [state.farmerType, user?.id]);
+  }, [state.farmerType, user?.id, isVerified, navigation]);
 
   const handleFarmerTypeChange = (type) => {
     viewModel.setFarmerType(type);
@@ -54,43 +55,67 @@ const FarmDetails = ({ navigation }) => {
     setState(viewModel.getState());
   };
 
+  const handleFormSubmit = async () => {
+    try {
+      const success = await viewModel.submitForm(user.id);
+      if (success) {
+        setIsRegistrationComplete(true);
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: viewModel.getState().isOffline
+            ? 'Data saved locally. Will sync when online.'
+            : `Registered as ${state.farmerType} farmer!`,
+        });
+        navigation.replace('MainTabs');
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: viewModel.getState().error,
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message,
+      });
+    }
+  };
+
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
       <View style={styles.vectorContainer}>
-        <Image 
-          // source={require('../../../assets/Vector1.png')} 
-          style={styles.vector1}
-        />
-        <Image 
-          source={require('../../../assets/Vector.png')} 
+        <Image
+          source={require('../../../assets/Vector.png')}
           style={styles.vector2}
         />
       </View>
-
-      <StyledText style={styles.title} bold>Farm Details</StyledText>
-      <StyledText style={styles.subtitle}>
-        Fill in details about your farm to have a personalised insight page.
+      <StyledText style={styles.title} bold>
+        Farm Details
       </StyledText>
-
-      <FarmerTypeInput 
-        value={state.farmerType} 
-        onChange={handleFarmerTypeChange} 
+      <StyledText style={styles.subtitle}>
+        Fill in details about your farm to have a personalized insight page.
+      </StyledText>
+      <FarmerTypeInput
+        value={state.farmerType}
+        onChange={handleFarmerTypeChange}
       />
-
       {state.farmerType === 'new' ? (
-        <NewFarmerForm 
+        <NewFarmerForm
           viewModel={viewModel}
-          formData={state.formData} 
+          formData={state.formData}
           onFormChange={handleFormChange}
-          navigation={navigation}
+          onSubmit={handleFormSubmit}
           userId={user?.id}
         />
       ) : (
-        <ExperiencedFarmerForm 
+        <ExperiencedFarmerForm
           viewModel={viewModel}
-          formData={state.formData} 
+          formData={state.formData}
           onFormChange={handleFormChange}
-          navigation={navigation}
+          onSubmit={handleFormSubmit}
           userId={user?.id}
         />
       )}
@@ -109,13 +134,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     zIndex: -1,
-  },
-  vector1: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    top: 0,
-    left: 0,
   },
   vector2: {
     position: 'absolute',

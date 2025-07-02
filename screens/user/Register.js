@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { ScrollableMainContainer } from '../../components';
 import StyledTextInput from '../../components/inputs/StyledTextInput';
@@ -12,6 +12,8 @@ import Toast from 'react-native-toast-message';
 import { RegistrationViewModel } from '../../viewModel/RegistrationViewModel';
 import container from '../../infrastructure/di/Container';
 
+console.log("Register", AuthContext)
+
 const Register = () => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -23,48 +25,80 @@ const Register = () => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isContainerReady, setIsContainerReady] = useState(false);
   const { setIsRegistered, setUser } = useContext(AuthContext);
   const navigation = useNavigation();
-  const viewModel = useMemo(() => new RegistrationViewModel(
-    container.get('registerUserUseCase'),
-    container.get('socialRegisterUseCase'),
-    container.get('validationService')
-  ), []);
 
+  const viewModel = useMemo(() => {
+    try {
+      return new RegistrationViewModel(
+        container.get('registerUserUseCase'),
+        container.get('socialRegisterUseCase'),
+        container.get('validationService')
+      );
+    } catch (error) {
+      console.error('Failed to initialize RegistrationViewModel:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Initialization Error',
+        text2: 'Failed to load registration. Please try again.',
+      });
+      return null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const checkContainer = async () => {
+      try {
+        await container.initialize();
+        setIsContainerReady(true);
+      } catch (error) {
+        console.error('Container initialization failed:', error);
+        Toast.show({
+          type: 'error',
+          text1: 'Initialization Error',
+          text2: 'Application failed to load. Please restart the app.',
+        });
+      }
+    };
+    checkContainer();
+  }, []);
+
+  if (!isContainerReady || !viewModel) {
+    return (
+      <View style={styles.container}>
+        <StyledText>Loading...</StyledText>
+      </View>
+    );
+  }
+
+  // Password requirements from ValidationService via ViewModel
   const passwordRequirements = viewModel.getPasswordRequirements(formData.password);
   const metRequirementsCount = passwordRequirements.filter(req => req.met).length;
-  const isFormValid = Object.values(formData).every(value => value.trim() !== '') &&
+
+  // Form validation
+  const isFormValid = () =>
+    Object.values(formData).every(value => value.trim() !== '') &&
     metRequirementsCount === passwordRequirements.length &&
     !Object.values(fieldErrors).some(error => error);
 
   const handleFieldChange = (fieldName, value) => {
     setFormData(prev => ({ ...prev, [fieldName]: value }));
-
-    let error = '';
-    if (fieldName === 'phoneNumber') {
-      const { isValid, error: phoneError } = viewModel.validatePhoneNumber(value);
-      error = phoneError;
-    } else if (fieldName === 'email') {
-      const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-      error = isValidEmail || value === '' ? '' : 'Invalid email format';
-    } else if (fieldName === 'firstName' || fieldName === 'lastName') {
-      error = value.trim().length >= 2 || value === '' ? '' : 'Must be at least 2 characters';
-    } else if (fieldName === 'password' && value) {
-      error = metRequirementsCount === passwordRequirements.length ? '' : 'Password does not meet requirements';
-    }
-    setFieldErrors(prev => ({ ...prev, [fieldName]: error }));
+    viewModel.updateFormData(fieldName, value);
+    setFieldErrors(prev => ({
+      ...prev,
+      [fieldName]: viewModel.getState().fieldErrors[fieldName] || '',
+    }));
   };
 
   const handleRegister = async () => {
     setIsLoading(true);
     setFieldErrors({});
     try {
-      console.log('Completing registration:', formData);
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Client timeout')), 15000)
+        setTimeout(() => reject(new Error('Request timed out')), 15000)
       );
       const result = await Promise.race([viewModel.register(formData), timeoutPromise]);
-      console.log('Register result:', result);
       if (result.success) {
         setIsRegistered(true);
         setUser({
@@ -77,29 +111,29 @@ const Register = () => {
         Toast.show({
           type: 'success',
           text1: 'Success',
-          text2: 'Registration successful! Please set up your farm details.',
+          text2: 'Registration successful! Please verify your email.',
         });
-        navigation.navigate('FarmDetails');
+        navigation.navigate('EmailVerification', { token: result.user.token });
       } else {
         setFieldErrors(result.fieldErrors || {});
         Toast.show({
           type: 'error',
           text1: 'Registration Failed',
-          text2: result.error || 'Please check your information and try again',
+          text2: result.error || 'Please check your information and try again.',
         });
       }
     } catch (error) {
-      console.error('Registration error:', error.message);
+      const errorMessage = error.message.includes('502')
+        ? 'Server is currently unavailable. Please try again later.'
+        : error.message.includes('timed out')
+        ? 'Request timed out. Please check your connection.'
+        : error.message.includes('AsyncStorage')
+        ? 'Storage error. Please try again.'
+        : error.message;
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error.message.includes('502')
-          ? 'Server is currently unavailable. Please try again later.'
-          : error.message.includes('timed out')
-          ? 'Request timed out. Please check your connection.'
-          : error.message.includes('AsyncStorage')
-          ? 'Storage error. Please try again.'
-          : error.message,
+        text2: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -109,36 +143,34 @@ const Register = () => {
   const handleSocialRegister = async (provider) => {
     setIsLoading(true);
     try {
-      console.log('Social register:', provider);
       const result = await viewModel.socialRegister(provider);
       if (result.success) {
         setIsRegistered(true);
         setUser({
           id: result.user.id,
           firstName: result.user.firstName || 'User',
-          lastName: result.user.lastName,
+          lastName: result.user.lastName || '',
           email: result.user.email,
+          phoneNumber: result.user.phoneNumber || '',
         });
         Toast.show({
           type: 'success',
           text1: 'Success',
-          text2: `Registered with ${result.provider}! Please log in.`,
+          text2: `Registered with ${provider}! Please set up your farm details.`,
         });
-        navigation.navigate('Login');
+        navigation.navigate('FarmDetails');
       } else {
-        console.log('Social registration failed:', result.error);
         Toast.show({
           type: 'error',
           text1: 'Registration Failed',
-          text2: result.error,
+          text2: result.error || 'Social registration failed.',
         });
       }
     } catch (error) {
-      console.error('Unexpected social registration error:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Social registration failed',
+        text2: 'Social registration failed. Please try again.',
       });
     } finally {
       setIsLoading(false);
@@ -152,21 +184,21 @@ const Register = () => {
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
       <View style={styles.vectorContainer}>
-        <Image source={require('../../assets/Vector 1.png')} style={styles.vector1} />
+        {/* <Image source={require('../../assets/Vector1.png')} style={styles.vector1} /> */}
         <Image source={require('../../assets/Vector.png')} style={styles.vector2} />
       </View>
 
       <View style={styles.header}>
         <StyledText style={styles.title}>Create Account</StyledText>
         <StyledText style={styles.subtitle}>
-          Welcome to Zao App setup to your account to continue
+          Welcome to Zao App. Set up your account to continue.
         </StyledText>
       </View>
 
       <View style={styles.formContainer}>
         {/* First Name */}
         <View style={styles.inputWrapper}>
-          <StyledText style={styles.inputLabel}>First name</StyledText>
+          <StyledText style={styles.inputLabel}>First Name</StyledText>
           <StyledTextInput
             placeholder="Enter first name"
             value={formData.firstName}
@@ -180,7 +212,7 @@ const Register = () => {
 
         {/* Last Name */}
         <View style={styles.inputWrapper}>
-          <StyledText style={styles.inputLabel}>Last name</StyledText>
+          <StyledText style={styles.inputLabel}>Last Name</StyledText>
           <StyledTextInput
             placeholder="Enter last name"
             value={formData.lastName}
@@ -194,7 +226,7 @@ const Register = () => {
 
         {/* Email */}
         <View style={styles.inputWrapper}>
-          <StyledText style={styles.inputLabel}>Email address</StyledText>
+          <StyledText style={styles.inputLabel}>Email Address</StyledText>
           <StyledTextInput
             placeholder="Enter email address"
             value={formData.email}
@@ -210,13 +242,13 @@ const Register = () => {
 
         {/* Phone Number */}
         <View style={styles.inputWrapper}>
-          <StyledText style={styles.inputLabel}>Phone number</StyledText>
+          <StyledText style={styles.inputLabel}>Phone Number</StyledText>
           <StyledTextInput
             placeholder="Enter phone number (e.g., +254700000000)"
             value={formData.phoneNumber}
             onChangeText={(value) => handleFieldChange('phoneNumber', value)}
             keyboardType="phone-pad"
-            maxLength={12}
+            maxLength={15}
             style={[styles.input, fieldErrors.phoneNumber ? styles.inputError : null]}
           />
           {fieldErrors.phoneNumber && (
@@ -254,7 +286,7 @@ const Register = () => {
         {/* Password Requirements */}
         <View style={styles.passwordRequirements}>
           <View style={styles.requirementsHeader}>
-            <StyledText style={styles.requirementText}>Password strength</StyledText>
+            <StyledText style={styles.requirementText}>Password Strength</StyledText>
             <StyledText style={styles.requirementCount}>{`${metRequirementsCount}/5`}</StyledText>
           </View>
           <View style={styles.requirementsGrid}>
@@ -272,15 +304,15 @@ const Register = () => {
         {/* Terms */}
         <View style={styles.termsContainer}>
           <StyledText style={styles.termsText}>
-            By clicking "Create account", you agree to our{' '}
+            By clicking "Create Account", you agree to our{' '}
             <StyledText style={styles.linkText} onPress={goToUserAgreement}>
-              User agreement
+              User Agreement
             </StyledText>{' '}
             and{' '}
             <StyledText style={styles.linkText} onPress={goToPrivacyPolicy}>
-              Privacy policy
+              Privacy Policy
             </StyledText>{' '}
-            of Zao APP.
+            of Zao App.
           </StyledText>
         </View>
       </View>
@@ -288,9 +320,9 @@ const Register = () => {
       {/* Register Button */}
       <View style={styles.buttonContainer}>
         <StyledButton
-          title="Receive Email Verification"
+          title="Create Account"
           onPress={handleRegister}
-          disabled={isLoading || !isFormValid || !!fieldErrors.phoneNumber}
+          disabled={isLoading || !isFormValid()}
           style={styles.registerButton}
         />
 
@@ -303,34 +335,34 @@ const Register = () => {
 
       {/* Social Buttons */}
       <View style={styles.socialButtonsContainer}>
-  <StyledButton
-    title="Continue with Google"
-    icon="google"
-    iconColor="#DB4437"
-    onPress={() => handleSocialRegister('Google')}
-    isSocial
-    style={styles.socialButton}
-    disabled={isLoading}
-  />
-  <StyledButton
-    title="Continue with Facebook"
-    icon="facebook-box"
-    iconColor="#1877F2"
-    onPress={() => handleSocialRegister('Facebook')}
-    isSocial
-    style={styles.socialButton}
-    disabled={isLoading}
-  />
-  <StyledButton
-    title="Continue with Apple"
-    icon="apple"
-    iconColor="#000000"
-    onPress={() => handleSocialRegister('Apple')}
-    isSocial
-    style={styles.socialButton}
-    disabled={isLoading}
-  />
-</View>
+        <StyledButton
+          title="Continue with Google"
+          icon="google"
+          iconColor="#DB4437"
+          onPress={() => handleSocialRegister('Google')}
+          isSocial
+          style={styles.socialButton}
+          disabled={isLoading}
+        />
+        <StyledButton
+          title="Continue with Facebook"
+          icon="facebook-box"
+          iconColor="#1877F2"
+          onPress={() => handleSocialRegister('Facebook')}
+          isSocial
+          style={styles.socialButton}
+          disabled={isLoading}
+        />
+        <StyledButton
+          title="Continue with Apple"
+          icon="apple"
+          iconColor="#000000"
+          onPress={() => handleSocialRegister('Apple')}
+          isSocial
+          style={styles.socialButton}
+          disabled={isLoading}
+        />
+      </View>
 
       {/* Login Link */}
       <View style={styles.loginContainer}>
@@ -354,6 +386,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     zIndex: -1,
+  },
+  vector1: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    top: 0,
+    left: 0,
   },
   vector2: {
     position: 'absolute',
@@ -464,7 +503,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 16,
     textAlign: 'center',
-    width: '48%', // Two columns with spacing
+    width: '48%',
     marginBottom: 8,
   },
   requirementMet: {

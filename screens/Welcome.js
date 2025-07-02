@@ -22,7 +22,7 @@ const Welcome = ({ route }) => {
     try {
       setCompletingOnboarding(true);
       await setIsZaoAppOnboarded(true);
-      navigation.replace('Auth'); // To Prevent back navigation
+      navigation.replace('Auth'); 
     } catch (error) {
       console.warn('Error completing onboarding:', error);
     } finally {

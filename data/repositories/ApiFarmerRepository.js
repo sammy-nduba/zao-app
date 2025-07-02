@@ -12,7 +12,7 @@ export class ApiFarmerRepository extends FarmerRepository {
 
   async saveFarmer(farmer) {
     try {
-      const response = await this.apiClient.post('/farmers', farmer);
+      const response = await this.apiClient.post('/api/farmer/add/all', farmer);
       return new Farmer(response);
     } catch (error) {
       throw new Error(`Failed to save farmer data: ${error.message}`);

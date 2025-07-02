@@ -3,8 +3,6 @@ import { Text } from 'react-native';
 import { colors } from '../../config/theme';
 
 
-// console.log("Styled Text logs", colors)
-
 
 const StyledText = ({ children, small, big, bold, style, ...props }) => {
   return (

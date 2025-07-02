@@ -1,4 +1,3 @@
-// src/domain/UseCases/user/RegisterUserUseCase.js
 import { User } from '../../../domain/entities/User';
 
 export class RegisterUserUseCase {

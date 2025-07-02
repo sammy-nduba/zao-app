@@ -288,7 +288,7 @@ const Register = () => {
       {/* Register Button */}
       <View style={styles.buttonContainer}>
         <StyledButton
-          title="Create account"
+          title="Receive Email Verification"
           onPress={handleRegister}
           disabled={isLoading || !isFormValid || !!fieldErrors.phoneNumber}
           style={styles.registerButton}

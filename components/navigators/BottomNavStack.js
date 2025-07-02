@@ -11,7 +11,6 @@ import {ZaoAIScreen} from '../../screens/ZaoAIScreen/ZaoAIScreen';
 import HomeStack from './HomeStack';
 
 const centralIcon = require('../../assets/insights/cropImage.png');
-
 console.log("ZAOAI", ZaoAIScreen)
 
 

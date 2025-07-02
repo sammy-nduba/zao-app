@@ -7,6 +7,7 @@
     "icon": "./assets/splash-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "zao",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -24,7 +25,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.nduba.zao"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -46,14 +48,12 @@
       }
     },
     "owner": "nduba",
-    // "runtimeVersion": {
-    //   "policy": "appVersion"
-
-    // },
     "runtimeVersion": "1.0.0",
-    
     "updates": {
       "url": "https://u.expo.dev/685e8fd8-194d-4295-9f3f-372f9f419bf1"
     }
+    
   }
+  
+  
 }

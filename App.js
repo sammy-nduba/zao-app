@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, } from 'react';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -16,24 +17,21 @@ import { AuthViewModel } from './viewModel/AuthViewModel';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './infrastructure/i18n/i18n';
 import { SyncService } from './utils/SyncService';
-// import codePush from 'react-native-code-push'; // Import codePush only
+import   ErrorBoundary  from './utils/ErrorBoundary';
+import { Linking } from 'react-native';
+
+
+console.log('OnboardingStack:', OnboardingStack);
+console.log('AuthStack:', AuthStack);
+console.log('BottomNavStack:', BottomNavStack);
+console.log('ErrorScreen:', ErrorScreen);
+console.log("ErrorBoundary", ErrorBoundary)
+
+
+
 
 const Stack = createStackNavigator();
 
-const ErrorBoundary = ({ children }) => {
-  const [hasError, setHasError] = useState(false);
-
-  if (hasError) {
-    return <ErrorScreen error="An unexpected error occurred" />;
-  }
-
-  try {
-    return children;
-  } catch (error) {
-    setHasError(true);
-    return null;
-  }
-};
 
 function App() {
   const navigationRef = useNavigationContainerRef();
@@ -101,8 +99,31 @@ function App() {
     },
   };
 
+
+
+  const linking = {
+    prefixes: ['zao://', 'https://zao-app.com'],
+    config: {
+      screens: {
+        Auth: {
+          path: 'auth',
+          screens: {
+            EmailVerification: {
+              path: 'verify-email/:token',
+              parse: {
+                token: (token) => `${token}`,
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+
   if (!appReady || !i18nReady || authState.isZaoAppOnboarded === null) {
-    return null;
+    return (
+      <View style={{ flex: 1, backgroundColor: 'white' }} />
+    );
   }
 
   return (
@@ -112,9 +133,7 @@ function App() {
           <ErrorBoundary>
             <NavigationContainer
               ref={navigationRef}
-              onStateChange={() => {
-                console.log('Navigation state:', navigationRef.current?.getCurrentRoute());
-              }}
+              linking={linking}
             >
               <Stack.Navigator
                 initialRouteName={
@@ -133,10 +152,9 @@ function App() {
                 <Stack.Screen name="Auth" component={AuthStack} />
                 <Stack.Screen name="MainTabs" component={BottomNavStack} />
               </Stack.Navigator>
-              <StatusBar style="auto" />
             </NavigationContainer>
-            <Toast config={ToastConfig} />
           </ErrorBoundary>
+          <Toast config={ToastConfig} />
         </AuthContext.Provider>
       </GestureHandlerRootView>
     </I18nextProvider>

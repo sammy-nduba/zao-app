@@ -1,4 +1,3 @@
-// src/viewModel/AuthViewModel.js
 export class AuthViewModel {
   constructor(storageService) {
     this.storageService = storageService;

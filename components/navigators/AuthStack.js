@@ -1,4 +1,3 @@
-// src/navigation/AuthStack.js
 import React from 'react';
 import {
   FarmDetails,
@@ -7,8 +6,9 @@ import {
   ForgotPassword,
   OTPScreen,
   NewFarmerForm,
-  ExperiencedFarmerForm,
+  ExperiencedFarmerForm
 } from '../../screens';
+import { EmailVerificationScreen } from '../../screens/user/EmailVerificationScreen';
 import { createStackNavigator } from '@react-navigation/stack';
 
 const Stack = createStackNavigator();
@@ -23,6 +23,8 @@ const AuthStack = () => {
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
       <Stack.Screen name="OTPScreen" component={OTPScreen} />
+      <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
+
     </Stack.Navigator>
   );
 };

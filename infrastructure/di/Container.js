@@ -45,6 +45,7 @@ class Container {
     this.dependencies.set('newsApiClient', new ApiClient('https://newsapi.org/v2'));
     this.dependencies.set('appApiClient', new ApiClient('https://zao-backend-api.onrender.com'));
 
+
     // Farmer dependencies
     this.dependencies.set('asyncStorageFarmerRepository', new AsyncStorageFarmerRepository());
     this.dependencies.set('apiFarmerRepository', new ApiFarmerRepository(this.get('appApiClient')));

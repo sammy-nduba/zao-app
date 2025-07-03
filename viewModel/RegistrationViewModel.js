@@ -35,7 +35,7 @@ export class RegistrationViewModel {
       const user = await this.registerUseCase.execute(formData);
       console.log('Registration successful, user:', user);
       this.state.isRegistered = true;
-      return { success: true, user: { ...user, token: user.token } }; // Ensure token is included
+      return { success: true, user: { ...user, token: user.token } }; 
     } catch (error) {
       console.error('Registration error:', error.message);
       const errors = error.message.split(': ')[1]?.split(', ') || [error.message];

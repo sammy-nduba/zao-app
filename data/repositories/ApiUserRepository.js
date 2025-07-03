@@ -6,7 +6,7 @@ export class ApiUserRepository {
   async register(user) {
     try {
       console.log('ApiUserRepository.register called with:', user);
-      const response = await this.apiClient.post('/api/farmer/signup', {
+      const response = await this.apiClient.post('/api/farmer/register', {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -52,7 +52,7 @@ export class ApiUserRepository {
   async login(loginData) {
     try {
       console.log('ApiUserRepository.login called with:', loginData);
-      const response = await this.apiClient.post('/login', {
+      const response = await this.apiClient.post('/api/farmer/signin', {
         email: loginData.email,
         password: loginData.password,
       });

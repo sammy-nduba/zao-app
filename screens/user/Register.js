@@ -1,5 +1,5 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { ScrollableMainContainer } from '../../components';
 import StyledTextInput from '../../components/inputs/StyledTextInput';
 import StyledText from '../../components/Texts/StyledText';
@@ -28,49 +28,81 @@ const Register = () => {
   const [isContainerReady, setIsContainerReady] = useState(false);
   const { setIsRegistered, setUser } = useContext(AuthContext);
   const navigation = useNavigation();
+  const [viewModel, setViewModel] = useState(null);
 
-  const viewModel = useMemo(() => {
-    try {
-      return new RegistrationViewModel(
-        container.get('registerUserUseCase'),
-        container.get('socialRegisterUseCase'),
-        container.get('validationService')
-      );
-    } catch (error) {
-      console.error('Failed to initialize RegistrationViewModel:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Initialization Error',
-        text2: 'Failed to load registration. Please try again.',
-      });
-      return null;
-    }
-  }, []);
+useEffect(() => {
+  if (!container.isInitialized) return;
 
-  useEffect(() => {
-    const checkContainer = async () => {
-      try {
-        await container.initialize();
-        setIsContainerReady(true);
-      } catch (error) {
-        console.error('Container initialization failed:', error);
-        Toast.show({
-          type: 'error',
-          text1: 'Initialization Error',
-          text2: 'Application failed to load. Please restart the app.',
-        });
-      }
-    };
-    checkContainer();
-  }, []);
+  try {
+    const vm = new RegistrationViewModel(
+      container.get('registerUserUseCase'),
+      container.get('socialRegisterUseCase'),
+      container.get('validationService')
+    );
+    setViewModel(vm);
+  } catch (error) {
+    console.error('Failed to initialize RegistrationViewModel:', error);
+    Toast.show({
+      type: 'error',
+      text1: 'Initialization Error',
+      text2: 'Failed to load registration. Please try again.',
+    });
+  }
+}, []);
 
-  if (!isContainerReady || !viewModel) {
+  // const viewModel = useMemo(() => {
+  //   try {
+  //     return new RegistrationViewModel(
+  //       container.get('registerUserUseCase'),
+  //       container.get('socialRegisterUseCase'),
+  //       container.get('validationService')
+  //     );
+  //   } catch (error) {
+  //     console.error('Failed to initialize RegistrationViewModel:', error);
+  //     Toast.show({
+  //       type: 'error',
+  //       text1: 'Initialization Error',
+  //       text2: 'Failed to load registration. Please try again.',
+  //     });
+  //     return null;
+  //   }
+  // }, []);
+
+  // useEffect(() => {
+  //   const checkContainer = async () => {
+  //     try {
+  //       await container.initialize();
+  //       setIsContainerReady(true);
+  //     } catch (error) {
+  //       console.error('Container initialization failed:', error);
+  //       Toast.show({
+  //         type: 'error',
+  //         text1: 'Initialization Error',
+  //         text2: 'Application failed to load. Please restart the app.',
+  //       });
+  //     }
+  //   };
+  //   checkContainer();
+  // }, []);
+
+  // if (!isContainerReady || !viewModel) {
+  //   return (
+  //     <View style={styles.container}>
+  //       <StyledText>Loading...</StyledText>
+  //     </View>
+  //   );
+  // }
+
+
+  if (!viewModel) {
     return (
-      <View style={styles.container}>
-        <StyledText>Loading...</StyledText>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#006400" />
+        <StyledText style={styles.loadingText}>Preparing registration...</StyledText>
       </View>
     );
   }
+  
 
   // Password requirements from ValidationService via ViewModel
   const passwordRequirements = viewModel.getPasswordRequirements(formData.password);
@@ -485,6 +517,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     color: colors.primary[600],
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: colors.grey[600],
   },
   requirementsGrid: {
     flexDirection: 'row',

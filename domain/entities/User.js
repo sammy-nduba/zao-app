@@ -1,3 +1,4 @@
+
 export class User {
   constructor(firstName, lastName, email, phoneNumber, password, id = null, token = null) {
     this.id = id;

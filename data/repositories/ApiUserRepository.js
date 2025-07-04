@@ -6,48 +6,93 @@ export class ApiUserRepository {
   async register(user) {
     try {
       console.log('ApiUserRepository.register called with:', user);
-      const response = await this.apiClient.post('/api/farmer/register', {
+  
+      const signupResponse = await this.apiClient.post('/api/farmer/verify-email', {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        phoneNumber: user.phoneNumber,
+        phone: user.phoneNumber,
         password: user.password,
       });
-      return {
-        userId: response.data.id,
-        token: response.data.token, 
-        message: 'Registration successful. Please verify your email.',
-      };
+  
+      console.log('Signup response:', signupResponse.data);
+  
+      const { message, token } = signupResponse.data;
+  
+      if (!message || !token) {
+        throw new Error('Invalid server response. Please try again.');
+      }
+  
+      return { message, token };
     } catch (error) {
       console.error('Registration error:', {
         message: error.message,
         response: error.response?.data,
+        status: error.response?.status,
+        request: error.config,
       });
       throw new Error(
-        error.response?.data?.message || 'Failed to register. Please try again.',
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to initiate registration. Please check your network or server status.'
       );
     }
   }
-
+  
   async verifyEmail(token) {
     try {
-      const response = await this.apiClient.post('/api/farmer/verify-email', { token });
+      console.log('ApiUserRepository.verifyEmail called with:', token);
+  
+      const response = await this.apiClient.post('/api/farmer/register', { token });
+      const data = response.data;
+  
+      console.log('Verify email response:', data);
+  
       return {
-        userId: response.data.id,
-        email: response.data.email,
-        isVerified: true,
-        message: 'Email verified successfully.',
+        userId: data._id,
+        email: data.email,
+        token: data.token,
+        message: data.message || 'Registration successful.',
       };
     } catch (error) {
       console.error('Email verification error:', {
         message: error.message,
         response: error.response?.data,
+        status: error.response?.status,
       });
       throw new Error(
-        error.response?.data?.message || 'Email verification failed. Invalid or expired token.',
+        error.response?.data?.message || 'Registration failed. Invalid or expired token.'
       );
     }
   }
+  
+  async resendVerification(email) {
+    try {
+      console.log('ApiUserRepository.resendVerification called with:', email);
+  
+      const response = await this.apiClient.post('/api/farmer/resend-verification', { email });
+      const data = response.data;
+  
+      console.log('Resend verification response:', data);
+  
+      return {
+        success: true,
+        message: data.message,
+        token: data.token,
+      };
+    } catch (error) {
+      console.error('Resend verification error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      throw new Error(
+        error.response?.data?.message || 'Failed to resend verification email.'
+      );
+    }
+  }
+  
+
 
   async login(loginData) {
     try {

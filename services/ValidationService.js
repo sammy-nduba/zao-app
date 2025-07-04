@@ -1,5 +1,23 @@
-// src/services/ValidationService.js
 export class ValidationService {
+  validateField(fieldName, value) {
+    if (!value || value.trim() === '') {
+      return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} is required`;
+    }
+    switch (fieldName) {
+      case 'firstName':
+      case 'lastName':
+        return value.length >= 2 ? '' : `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} must be at least 2 characters`;
+      case 'email':
+        return this.validateEmail(value) ? '' : 'Invalid email format';
+      case 'phoneNumber':
+        return this.validatePhoneNumber(value) ? '' : 'Invalid phone number format (e.g., +254700000000)';
+      case 'password':
+        return this.validatePassword(value) ? '' : 'Password does not meet requirements';
+      default:
+        return '';
+    }
+  }
+
   validateRegistrationData(data) {
     const errors = [];
     if (!data.firstName || data.firstName.length < 2) {
@@ -48,11 +66,13 @@ export class ValidationService {
   }
 
   validatePassword(password) {
-    return password.length >= 8 &&
-           /[A-Z]/.test(password) &&
-           /[a-z]/.test(password) &&
-           /[0-9]/.test(password) &&
-           /[^A-Za-z0-9]/.test(password);
+    return (
+      password.length >= 8 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /[0-9]/.test(password) &&
+      /[^A-Za-z0-9]/.test(password)
+    );
   }
 
   getPasswordRequirements(password) {

@@ -1,83 +1,87 @@
-export class RegistrationViewModel {
-  constructor(registerUseCase, socialRegisterUseCase, validationService) {
-    this.registerUseCase = registerUseCase;
+class RegistrationViewModel {
+  constructor(registerUserUseCase, socialRegisterUseCase, validationService) {
+    this.registerUserUseCase = registerUserUseCase;
     this.socialRegisterUseCase = socialRegisterUseCase;
     this.validationService = validationService;
-    this.state = {
-      formData: {
-        firstName: '',
-        lastName: '',
-        email: '',
-        phoneNumber: '',
-        password: '',
-      },
-      fieldErrors: {},
-      isLoading: false,
-      isRegistered: false,
-    };
+    this.state = { formData: {}, fieldErrors: {} };
   }
 
   updateFormData(fieldName, value) {
     this.state.formData[fieldName] = value;
-    if (fieldName === 'phoneNumber') {
-      const { isValid, error } = this.validatePhoneNumber(value);
-      this.state.fieldErrors.phoneNumber = error;
-    } else if (this.state.fieldErrors[fieldName]) {
-      this.state.fieldErrors[fieldName] = '';
-    }
-  }
-
-  async register(formData) {
-    this.state.isLoading = true;
-    this.state.fieldErrors = {};
-    try {
-      console.log('RegistrationViewModel.register called with:', formData);
-      const user = await this.registerUseCase.execute(formData);
-      console.log('Registration successful, user:', user);
-      this.state.isRegistered = true;
-      return { success: true, user: { ...user, token: user.token } }; 
-    } catch (error) {
-      console.error('Registration error:', error.message);
-      const errors = error.message.split(': ')[1]?.split(', ') || [error.message];
-      const newFieldErrors = {};
-      errors.forEach(error => {
-        if (error.includes('First name')) newFieldErrors.firstName = error;
-        else if (error.includes('Last name')) newFieldErrors.lastName = error;
-        else if (error.includes('Email') || error.includes('email')) newFieldErrors.email = error;
-        else if (error.includes('phone')) newFieldErrors.phoneNumber = error;
-        else if (error.includes('Password') || error.includes('password')) newFieldErrors.password = error;
-      });
-      this.state.fieldErrors = newFieldErrors;
-      return { success: false, error: error.message, fieldErrors: newFieldErrors };
-    } finally {
-      this.state.isLoading = false;
-    }
-  }
-
-  async socialRegister(provider) {
-    this.state.isLoading = true;
-    try {
-      console.log('Social register called for:', provider);
-      const user = await this.socialRegisterUseCase.execute(provider);
-      this.state.isRegistered = true;
-      return { success: true, user, provider };
-    } catch (error) {
-      console.error('Social registration error:', error.message);
-      return { success: false, error: error.message };
-    } finally {
-      this.state.isLoading = false;
-    }
-  }
-
-  validatePhoneNumber(value) {
-    return this.validationService.validatePhoneNumberOnEntry(value);
+    this.state.fieldErrors[fieldName] = this.validationService.validateField(fieldName, value);
   }
 
   getPasswordRequirements(password) {
     return this.validationService.getPasswordRequirements(password);
   }
 
+  validatePhoneNumber(phoneNumber) {
+    return this.validationService.validatePhoneNumberOnEntry(phoneNumber);
+  }
+
   getState() {
-    return { ...this.state };
+    return this.state;
+  }
+
+  async initiateSignup(formData) {
+    try {
+      console.log('Initiating signup with:', formData);
+      const validationResult = this.validationService.validateRegistrationData(formData);
+      if (!validationResult.isValid) {
+        this.state.fieldErrors = validationResult.errors.reduce((acc, error) => {
+          const field = error.toLowerCase().includes('first name') ? 'firstName' :
+                        error.toLowerCase().includes('last name') ? 'lastName' :
+                        error.toLowerCase().includes('email') ? 'email' :
+                        error.toLowerCase().includes('phone') ? 'phoneNumber' :
+                        error.toLowerCase().includes('password') ? 'password' : '';
+          return { ...acc, [field]: error };
+        }, {});
+        return { success: false, error: validationResult.errors[0] };
+      }
+      const result = await this.registerUserUseCase.initiateSignup(formData);
+      console.log('Initiate signup result:', result);
+      return result;
+    } catch (error) {
+      console.error('Initiate signup error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async register(token) {
+    try {
+      console.log('Completing registration with token:', token);
+      const result = await this.registerUserUseCase.execute(token);
+      console.log('Register result:', result);
+      return result;
+    } catch (error) {
+      console.error('Register error:', error);
+      return { success: false, error: error.message, fieldErrors: error.fieldErrors };
+    }
+  }
+
+  async socialRegister(provider) {
+    try {
+      console.log('Social register with provider:', provider);
+      const result = await this.socialRegisterUseCase.execute(provider);
+      console.log('Social register result:', result);
+      return result;
+    } catch (error) {
+      console.error('Social register error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async resendVerification(email) {
+    try {
+      console.log('Resending verification for:', email);
+      const result = await this.registerUserUseCase.resendVerification(email);
+      console.log('Resend verification result:', result);
+      return result;
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      return { success: false, error: error.message };
+    }
   }
 }
+
+export { RegistrationViewModel };

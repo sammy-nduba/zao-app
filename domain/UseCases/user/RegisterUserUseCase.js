@@ -1,57 +1,49 @@
+
 export class RegisterUserUseCase {
-  constructor(userRepository, validationService, storageService) {
+  constructor(userRepository, storageService) {
     this.userRepository = userRepository;
-    this.validationService = validationService;
     this.storageService = storageService;
   }
 
-  async execute(userData) {
+  async initiateSignup(formData) {
     try {
-      console.log('RegisterUserUseCase.execute called with:', userData);
-      const validationResult = this.validationService.validateRegistrationData(userData);
-      if (!validationResult.isValid) {
-        throw new Error(`Validation failed: ${validationResult.errors.join(', ')}`);
-      }
-      const userResponse = await this.userRepository.register(userData);
-      const user = {
-        id: userResponse.userId,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email,
-        phoneNumber: userData.phoneNumber,
-        token: userResponse.token,
+      console.log('RegisterUserUseCase.initiateSignup called with:', formData);
+      const response = await this.userRepository.register(formData);
+      console.log('Initiate signup response:', response);
+      return {
+        success: true,
+        message: response.message,
+        token: response.token,
       };
-      await this.storageService.storeItem('Registration', true);
-      await this.storageService.storeSecureItem('RegistrationToken', userResponse.token); // Store token securely
-      console.log('Stored Registration status and token');
-      return user;
     } catch (error) {
-      console.error('RegisterUserUseCase error:', error);
-      throw new Error(error.message);
+      console.error('RegisterUserUseCase.initiateSignup error:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
     }
   }
-  
-}
 
-export class SocialRegisterUseCase {
-  constructor(socialAuthService, storageService) {
-    this.socialAuthService = socialAuthService;
-    this.storageService = storageService;
-  }
-
-  async execute(provider) {
+  async resendVerification(email) {
     try {
-      console.log('SocialRegisterUseCase.execute called with:', provider); // Debug
-      const user = await this.socialAuthService.register(provider);
-      await this.storageService.storeItem('Registration', true);
-      console.log('Stored Social Registration status'); // Debug
-      return user;
+      console.log('RegisterUserUseCase.resendVerification called with:', email);
+      const response = await this.userRepository.resendVerification(email);
+      console.log('Resend verification response:', response);
+      return {
+        success: response.success,
+        message: response.message,
+        token: response.token,
+      };
     } catch (error) {
-      console.error('SocialRegisterUseCase error:', error); // Debug
-      throw new Error(error.message);
+      console.error('RegisterUserUseCase.resendVerification error:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
     }
   }
 }
+
 
 export default class VerifyEmailUseCase {
   constructor(userRepository) {

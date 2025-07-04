@@ -19,7 +19,6 @@ import i18n from './infrastructure/i18n/i18n';
 import { SyncService } from './utils/SyncService';
 import ErrorBoundary  from './utils/ErrorBoundary';
 
-console.log("App", SyncService, ErrorBoundary, AuthViewModel, )
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();

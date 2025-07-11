@@ -1,20 +1,27 @@
+// src/screens/NewPasswordScreen.js
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { ScrollableMainContainer, StyledButton } from '../../components';
 import StyledText from '../../components/Texts/StyledText';
 import StyledTextInput from '../../components/inputs/StyledTextInput';
 import { colors } from '../../config/theme';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { ForgotPasswordViewModel } from '../../viewModel/ForgotPasswordViewModel';
 import container from '../../infrastructure/di/Container';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const ForgotPassword = () => {
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
+const NewPasswordScreen = () => {
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [containerError, setContainerError] = useState(null);
   const navigation = useNavigation();
+  const route = useRoute();
+  const { email, resetToken } = route.params;
 
   const viewModel = useMemo(() => {
     try {
@@ -26,7 +33,7 @@ const ForgotPassword = () => {
         container.get('validationService')
       );
     } catch (error) {
-      console.error('ForgotPassword: Failed to initialize ViewModel:', error);
+      console.error('NewPasswordScreen: Failed to initialize ViewModel:', error);
       setContainerError(error.message);
       return null;
     }
@@ -57,31 +64,41 @@ const ForgotPassword = () => {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    setEmailError('');
+    setPasswordError('');
+    setConfirmPasswordError('');
     try {
-      const result = await viewModel.requestResetPassword(email);
-      console.log('ForgotPassword result:', result);
+      if (newPassword !== confirmPassword) {
+        setConfirmPasswordError('Passwords do not match');
+        Toast.show({
+          type: 'error',
+          text1: 'Password Mismatch',
+          text2: 'Passwords do not match',
+        });
+        return;
+      }
+      const result = await viewModel.resetPassword(email, resetToken, newPassword);
+      console.log('NewPasswordScreen result:', result);
       if (result.success) {
         Toast.show({
           type: 'success',
-          text1: 'OTP Sent',
+          text1: 'Password Reset',
           text2: result.message,
         });
-        navigation.navigate('OTPScreen', { email, token: result.token });
+        navigation.replace('Login');
       } else {
-        setEmailError(result.error);
+        setPasswordError(result.error);
         Toast.show({
           type: 'error',
-          text1: 'Failed to Send OTP',
-          text2: result.error.includes('404')
-            ? 'Email not found.'
+          text1: 'Password Reset Failed',
+          text2: result.error.includes('401')
+            ? 'Invalid or expired OTP.'
             : result.error.includes('network') || result.error.includes('timeout')
             ? 'Network error. Please check your connection.'
             : result.error,
         });
       }
     } catch (error) {
-      console.error('ForgotPassword error:', error);
+      console.error('NewPasswordScreen error:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -102,38 +119,66 @@ const ForgotPassword = () => {
       </View>
 
       <View style={styles.header}>
-        <StyledText style={styles.title}>Forgot Password</StyledText>
+        <StyledText style={styles.title}>Set New Password</StyledText>
         <StyledText style={styles.subtitle}>
-          Enter your email address to receive a 5-digit OTP
+          Enter your new password for {email}
         </StyledText>
       </View>
 
       <View style={styles.formContainer}>
         <View style={styles.inputWrapper}>
-          <StyledText style={styles.inputLabel}>Email address</StyledText>
+          <StyledText style={styles.inputLabel}>New Password</StyledText>
+          <View style={styles.passwordInputContainer}>
+            <StyledTextInput
+              placeholder="Enter new password"
+              value={newPassword}
+              onChangeText={(text) => {
+                setNewPassword(text);
+                setPasswordError('');
+                viewModel.updateFormData('newPassword', text);
+              }}
+              secureTextEntry={!showPassword}
+              style={[styles.input, passwordError ? styles.inputError : null]}
+            />
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <MaterialCommunityIcons
+                name={showPassword ? 'eye-off' : 'eye'}
+                size={20}
+                color={colors.placeholder}
+              />
+            </TouchableOpacity>
+          </View>
+          {passwordError ? (
+            <StyledText style={styles.errorText}>{passwordError}</StyledText>
+          ) : null}
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <StyledText style={styles.inputLabel}>Confirm Password</StyledText>
           <StyledTextInput
-            placeholder="Enter email address"
-            value={email}
+            placeholder="Confirm new password"
+            value={confirmPassword}
             onChangeText={(text) => {
-              setEmail(text);
-              setEmailError('');
-              viewModel.updateFormData('email', text);
+              setConfirmPassword(text);
+              setConfirmPasswordError('');
             }}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={[styles.input, emailError ? styles.inputError : null]}
+            secureTextEntry={!showPassword}
+            style={[styles.input, confirmPasswordError ? styles.inputError : null]}
           />
-          {emailError ? (
-            <StyledText style={styles.errorText}>{emailError}</StyledText>
+          {confirmPasswordError ? (
+            <StyledText style={styles.errorText}>{confirmPasswordError}</StyledText>
           ) : null}
         </View>
       </View>
 
       <View style={styles.buttonContainer}>
         <StyledButton
-          title="Send OTP"
+          title="Reset Password"
           onPress={handleSubmit}
-          disabled={isLoading || !email || !!emailError}
+          disabled={isLoading || !newPassword || !confirmPassword || !!passwordError || !!confirmPasswordError}
           style={styles.submitButton}
         />
       </View>
@@ -147,7 +192,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 24,
     backgroundColor: colors.background,
-    
   },
   vectorContainer: {
     position: 'absolute',
@@ -221,6 +265,15 @@ const styles = StyleSheet.create({
     color: '#FF0000',
     marginTop: 4,
   },
+  passwordInputContainer: {
+    position: 'relative',
+  },
+  toggleButton: {
+    position: 'absolute',
+    right: 15,
+    top: 15,
+    zIndex: 2,
+  },
   buttonContainer: {
     marginBottom: 24,
   },
@@ -244,4 +297,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ForgotPassword;
+export default NewPasswordScreen;

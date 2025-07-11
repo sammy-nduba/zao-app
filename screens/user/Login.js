@@ -1,5 +1,6 @@
-import React, { useState, useContext, useMemo } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
+// src/screens/Login.js
+import React, { useState, useContext, useMemo, useEffect } from 'react';
+import { View, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { ScrollableMainContainer, StyledButton } from '../../components';
 import StyledText from '../../components/Texts/StyledText';
 import StyledTextInput from '../../components/inputs/StyledTextInput';
@@ -19,12 +20,49 @@ const Login = () => {
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [containerError, setContainerError] = useState(null);
   const navigation = useNavigation();
-  const viewModel = useMemo(() => new LoginViewModel(
-    container.get('loginUserUseCase'),
-    container.get('socialLoginUseCase'),
-    container.get('validationService')
-  ), []);
+
+  const viewModel = useMemo(() => {
+    try {
+      if (!container.isInitialized) {
+        throw new Error('Container not initialized. Please wait.');
+      }
+      return new LoginViewModel(
+        container.get('loginUserUseCase'),
+        container.get('socialLoginUseCase'),
+        container.get('validationService')
+      );
+    } catch (error) {
+      console.error('Login: Failed to initialize ViewModel:', error);
+      setContainerError(error.message);
+      return null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (containerError) {
+      Toast.show({
+        type: 'error',
+        text1: 'Initialization Error',
+        text2: containerError.includes('Container not initialized')
+          ? 'App is still loading. Please wait or restart.'
+          : `Failed to load login: ${containerError}`,
+      });
+    }
+  }, [containerError]);
+
+  if (!viewModel) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary[600]} />
+        <StyledText style={styles.errorText}>
+          {containerError || 'Initializing login... Please wait.'}
+        </StyledText>
+      </View>
+    );
+  }
 
   const isFormValid = formData.email && formData.password && !fieldErrors.email && !fieldErrors.password;
 
@@ -35,11 +73,11 @@ const Login = () => {
   };
 
   const handleLogin = async () => {
+    setIsLoading(true);
     setFieldErrors({});
     try {
-      console.log('Submitting login:', formData); 
+      console.log('Submitting login:', formData);
       const result = await viewModel.login(formData);
-      
       if (result.success) {
         console.log('Login success, setting user:', result.user);
         setUser(result.user);
@@ -51,33 +89,41 @@ const Login = () => {
         });
         navigation.replace('MainTabs');
       } else {
-        console.log('Login failed:', result.error); 
+        console.log('Login failed:', result.error);
         setFieldErrors(viewModel.getState().fieldErrors);
         Toast.show({
           type: 'error',
           text1: 'Login Failed',
-          text2: result.error || 'Please check your credentials and try again',
+          text2: result.error.includes('401')
+            ? 'Invalid email or password.'
+            : result.error.includes('network') || result.error.includes('timeout')
+            ? 'Network error. Please check your connection.'
+            : result.error || 'Please check your credentials and try again',
         });
       }
     } catch (error) {
-      console.error('Unexpected login error:', error.message); 
+      console.error('Unexpected login error:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error.message.includes('AsyncStorage') 
+        text2: error.message.includes('AsyncStorage')
           ? 'Storage error. Please try again.'
+          : error.message.includes('401')
+          ? 'Invalid email or password.'
           : error.message,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSocialLogin = async (provider) => {
+    setIsLoading(true);
     try {
-      console.log('Social login:', provider); // Debug
+      console.log('Social login:', provider);
       const result = await viewModel.socialLogin(provider);
-      
       if (result.success) {
-        console.log('Social login success, setting user:', result.user); // Debug
+        console.log('Social login success, setting user:', result.user);
         setUser(result.user);
         setIsLoggedIn(true);
         Toast.show({
@@ -85,24 +131,30 @@ const Login = () => {
           text1: 'Success',
           text2: `Logged in with ${provider}!`,
         });
-        navigation.navigate('Home');
+        navigation.replace('MainTabs');
       } else {
-        console.log('Social login failed:', result.error); // Debug
+        console.log('Social login failed:', result.error);
         Toast.show({
           type: 'error',
           text1: 'Social Login Failed',
-          text2: result.error,
+          text2: result.error.includes('network') || result.error.includes('timeout')
+            ? 'Network error. Please check your connection.'
+            : result.error || 'Social login failed.',
         });
       }
     } catch (error) {
-      console.error('Unexpected social login error:', error.message); // Debug
+      console.error('Unexpected social login error:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error.message.includes('AsyncStorage') 
+        text2: error.message.includes('AsyncStorage')
           ? 'Storage error. Please try again.'
-          : 'Social login failed',
+          : error.message.includes('network') || error.message.includes('timeout')
+          ? 'Network error. Please check your connection.'
+          : 'Social login failed.',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -177,7 +229,7 @@ const Login = () => {
         <StyledButton
           title="Log In"
           onPress={handleLogin}
-          disabled={!isFormValid}
+          disabled={!isFormValid || isLoading}
           style={styles.loginButton}
         />
         <View style={styles.dividerContainer}>
@@ -194,6 +246,7 @@ const Login = () => {
           onPress={() => handleSocialLogin('Google')}
           isSocial
           style={styles.socialButton}
+          disabled={isLoading}
         />
         <StyledButton
           title="Continue with Facebook"
@@ -201,6 +254,7 @@ const Login = () => {
           onPress={() => handleSocialLogin('Facebook')}
           isSocial
           style={styles.socialButton}
+          disabled={isLoading}
         />
         <StyledButton
           title="Continue with Apple"
@@ -208,6 +262,7 @@ const Login = () => {
           onPress={() => handleSocialLogin('Apple')}
           isSocial
           style={styles.socialButton}
+          disabled={isLoading}
         />
       </View>
 
@@ -217,6 +272,7 @@ const Login = () => {
           <StyledText style={styles.registerLink}>Sign Up</StyledText>
         </TouchableOpacity>
       </View>
+      <Toast />
     </ScrollableMainContainer>
   );
 };

@@ -26,32 +26,56 @@ import { GetAvailableLanguagesUseCase } from '../../domain/UseCases/language/Get
 import { SelectLanguageUseCase } from '../../domain/UseCases/language/SelectLanguageUseCase';
 import { GetSelectedLanguageUseCase } from '../../domain/UseCases/language/GetSelectedLanguageUseCase';
 import { LanguageSelectionPresenter } from '../../viewModel/LanguageSelectionPresenter';
+import { ForgotPasswordUseCase } from '../../domain/UseCases/user/ForgotPasswordUseCase';
+import { ResetPasswordUseCase } from '../../domain/UseCases/user/ResetPasswordUseCase'; // New import
 
+
+// container.js
 class Container {
   constructor() {
     this.dependencies = new Map();
     this.isInitialized = false;
-    console.log('Container: Constructor called');
+    this.initializationPromise = null;
+    this.initializationAttempts = 0;
+    this.maxInitializationAttempts = 3;
   }
 
   async initialize() {
-    if (this.isInitialized) {
-      console.log('Container: Already initialized');
-      return;
-    }
-    try {
-      console.log('Container: Starting registration');
-      await this.register();
-      console.log('Container: Register complete, initializing StorageService');
-      await this.dependencies.get('storageService').initialize();
-      this.isInitialized = true;
-      console.log('Container: Initialized successfully');
-    } catch (error) {
-      console.error('Container: Initialization failed:', error);
-      throw error;
-    }
-  }
+    if (this.isInitialized) return true;
+    if (this.initializationPromise) return this.initializationPromise;
 
+    this.initializationPromise = (async () => {
+      try {
+        this.initializationAttempts++;
+        console.log(`Container: Initialization attempt ${this.initializationAttempts}`);
+
+        // Initialize StorageService first
+        const storageService = new StorageService();
+        await storageService.initialize();
+        this.dependencies.set('storageService', storageService);
+
+        // Register other dependencies
+        await this.register();
+
+        this.isInitialized = true;
+        console.log('Container: Initialized successfully');
+        return true;
+      } catch (error) {
+        console.error('Container: Initialization failed:', error);
+
+        if (this.initializationAttempts < this.maxInitializationAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return this.initialize();
+        }
+
+        throw new Error('Failed to initialize container after multiple attempts');
+      }
+    })();
+
+    return this.initializationPromise;
+  
+
+}
   async register() {
     try {
       // Register independent dependencies
@@ -109,10 +133,12 @@ class Container {
       console.log('Container: Registering socialLoginUseCase');
       this.dependencies.set('socialLoginUseCase', new SocialLoginUseCase(socialAuthService, storageService));
       console.log('Container: Registering verifyEmailUseCase');
-      this.dependencies.set('verifyEmailUseCase', new VerifyEmailUseCase(userRepository));
+      this.dependencies.set('verifyEmailUseCase', new VerifyEmailUseCase(userRepository, storageService));
       console.log('Container: Registering getWeatherUseCase');
       this.dependencies.set('getWeatherUseCase', new GetWeatherUseCase(weatherRepository, asyncStorageWeatherRepository));
       console.log('Container: Registering getNewsUseCase');
+      this.dependencies.set('resetPasswordUseCase', new ResetPasswordUseCase(userRepository, storageService)); // New
+      console.log('Container: Registering getWeatherUseCase');
       this.dependencies.set('getNewsUseCase', new GetNewsUseCase(newsRepository, asyncStorageNewsRepository));
       console.log('Container: Registering getDashboardDataUseCase');
       this.dependencies.set('getDashboardDataUseCase', new GetDashboardDataUseCase(dashboardRepository, asyncStorageFarmerRepository));

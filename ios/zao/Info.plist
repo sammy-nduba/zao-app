@@ -27,6 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
+          <string>zao</string>
           <string>com.nduba.zao</string>
         </array>
       </dict>

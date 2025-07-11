@@ -8,7 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import OnboardingStack from './components/navigators/OnboardingStacks';
 import AuthStack from './components/navigators/AuthStack';
 import { BottomNavStack } from './components/navigators/BottomNavStack';
-import ErrorScreen  from './screens/user/ErrorScreen';
+import ErrorScreen from './screens/user/ErrorScreen';
 import { AuthContext } from './utils/AuthContext';
 import Toast from 'react-native-toast-message';
 import ToastConfig from './utils/ToastConfig';
@@ -17,12 +17,11 @@ import { AuthViewModel } from './viewModel/AuthViewModel';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './infrastructure/i18n/i18n';
 import { SyncService } from './utils/SyncService';
-import ErrorBoundary  from './utils/ErrorBoundary';
-
+import ErrorBoundary from './utils/ErrorBoundary';
+import { ContainerProvider } from './utils/ContainerProvider';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
-
 
 const Stack = createStackNavigator();
 
@@ -71,7 +70,7 @@ function App() {
       }
     } catch (error) {
       console.error('App: Initialization failed:', error);
-      setAuthState(prev => ({ ...prev, authError: error.message }));
+      setAuthState((prev) => ({ ...prev, authError: error.message }));
       Toast.show({
         type: 'error',
         text1: 'Initialization Error',
@@ -143,15 +142,23 @@ function App() {
   };
 
   const linking = {
-    prefixes: ['zao://', 'https://zao-app.com'],
+    prefixes: [
+      'zao://',
+      'https://zao-app.com',
+      'exp://192.168.0.104:8081', // Add Expo dev prefix
+      'exp://', // Fallback for dynamic Expo hosts
+    ],
     config: {
       screens: {
         Auth: {
           path: 'auth',
           screens: {
             EmailVerification: {
-              path: 'verify-email/:token',
-              parse: { token: (token) => `${token}` },
+              path: 'verify-email',
+              parse: {
+                token: (token) => `${token}`,
+                email: (email) => `${email}`,
+              },
             },
           },
         },
@@ -160,11 +167,12 @@ function App() {
   };
 
   return (
-    <I18nextProvider i18n={i18n}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <AuthContext.Provider value={contextValue}>
-          <ErrorBoundary>
-            <NavigationContainer ref={navigationRef} linking={linking}>
+      <I18nextProvider i18n={i18n}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <ContainerProvider>
+            <AuthContext.Provider value={contextValue}>
+              <ErrorBoundary>
+                <NavigationContainer ref={navigationRef} linking={linking}>
               <Stack.Navigator
                 initialRouteName={
                   authState.authError
@@ -182,10 +190,18 @@ function App() {
                 <Stack.Screen name="Auth" component={AuthStack} />
                 <Stack.Screen name="MainTabs" component={BottomNavStack} />
               </Stack.Navigator>
-            </NavigationContainer>
-          </ErrorBoundary>
-          <Toast config={ToastConfig} />
-        </AuthContext.Provider>
+              </NavigationContainer>
+            </ErrorBoundary>
+            {/* <Toast config={ToastConfig} /> */}
+            <Toast 
+        config={ToastConfig} 
+        position="bottom"
+        bottomOffset={20}
+        visibilityTime={4000}
+        autoHide={true}
+      />
+          </AuthContext.Provider>
+        </ContainerProvider>
       </GestureHandlerRootView>
     </I18nextProvider>
   );

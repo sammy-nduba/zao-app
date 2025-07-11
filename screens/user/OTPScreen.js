@@ -1,26 +1,54 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { ScrollableMainContainer, StyledButton,} from '../../components';
+// src/screens/OTPScreen.js
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { View, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { ScrollableMainContainer, StyledButton } from '../../components';
 import StyledTextInput from '../../components/inputs/StyledTextInput';
 import StyledText from '../../components/Texts/StyledText';
 import { colors } from '../../config/theme';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
-
-
-console.log("OTP screen", StyledTextInput)
+import { ForgotPasswordViewModel } from '../../viewModel/ForgotPasswordViewModel';
+import container from '../../infrastructure/di/Container';
 
 const OTPScreen = () => {
   const [otp, setOtp] = useState(['', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(30);
   const [otpError, setOtpError] = useState('');
+  const [containerError, setContainerError] = useState(null);
   const navigation = useNavigation();
   const route = useRoute();
-  const { email, otp: sentOTP } = route.params; // Mock OTP from ForgotPassword
+  const { email, token } = route.params; // Token from requestResetPassword
   const inputRefs = useRef([]);
 
-  // Resend cooldown timer
+  const viewModel = useMemo(() => {
+    try {
+      if (!container.isInitialized) {
+        throw new Error('Container not initialized. Please wait.');
+      }
+      return new ForgotPasswordViewModel(
+        container.get('resetPasswordUseCase'),
+        container.get('validationService')
+      );
+    } catch (error) {
+      console.error('OTPScreen: Failed to initialize ViewModel:', error);
+      setContainerError(error.message);
+      return null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (containerError) {
+      Toast.show({
+        type: 'error',
+        text1: 'Initialization Error',
+        text2: containerError.includes('Container not initialized')
+          ? 'App is still loading. Please wait or restart.'
+          : `Failed to load: ${containerError}`,
+      });
+    }
+  }, [containerError]);
+
   useEffect(() => {
     if (resendCooldown > 0) {
       const timer = setInterval(() => {
@@ -30,18 +58,28 @@ const OTPScreen = () => {
     }
   }, [resendCooldown]);
 
+  if (!viewModel) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary[600]} />
+        <StyledText style={styles.errorText}>
+          {containerError || 'Initializing... Please wait.'}
+        </StyledText>
+      </View>
+    );
+  }
+
   const handleOtpChange = (value, index) => {
-    if (isNaN(value) && value !== '') return; // Allow only numbers
+    if (isNaN(value) && value !== '') return;
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
     setOtpError('');
+    viewModel.updateFormData('otp', value, index);
 
-    // Auto-focus next input
     if (value && index < 4) {
       inputRefs.current[index + 1].focus();
     }
-    // Auto-focus previous on backspace
     if (!value && index > 0) {
       inputRefs.current[index - 1].focus();
     }
@@ -52,49 +90,78 @@ const OTPScreen = () => {
     setOtpError('');
     try {
       const enteredOTP = otp.join('');
-      if (enteredOTP.length !== 5) {
-        setOtpError('Please enter a 5-digit OTP');
+      const result = await viewModel.verifyOtp(email, enteredOTP);
+      console.log('OTPScreen result:', result);
+      if (result.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'OTP Verified',
+          text2: result.message,
+        });
+        navigation.navigate('NewPasswordScreen', { email, resetToken: result.resetToken });
+      } else {
+        setOtpError(result.error);
         Toast.show({
           type: 'error',
-          text1: 'Invalid OTP',
-          text2: 'Please enter a 5-digit OTP',
+          text1: 'OTP Verification Failed',
+          text2: result.error.includes('401')
+            ? 'Invalid or expired OTP.'
+            : result.error.includes('network') || result.error.includes('timeout')
+            ? 'Network error. Please check your connection.'
+            : result.error,
         });
-        throw new Error('Invalid OTP length');
       }
-      // Mock OTP verification
-      if (enteredOTP !== sentOTP) {
-        setOtpError('Incorrect OTP');
-        Toast.show({
-          type: 'error',
-          text1: 'Incorrect OTP',
-          text2: 'The OTP entered is incorrect',
-        });
-        throw new Error('Incorrect OTP');
-      }
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'OTP verified! Please log in with your new password.',
-      });
-      navigation.navigate('Login');
     } catch (error) {
-      // Error shown via Toast
+      console.error('OTPScreen error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message.includes('network') || error.message.includes('timeout')
+          ? 'Network error. Please check your connection.'
+          : error.message,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (resendCooldown > 0) return;
+    setIsLoading(true);
     setResendCooldown(30);
-    // Mock resend OTP (replace with actual API call)
-    const mockOTP = Math.floor(10000 + Math.random() * 90000).toString();
-    Toast.show({
-      type: 'success',
-      text1: 'OTP Resent',
-      text2: 'A new 5-digit code has been sent to your email',
-    });
-    navigation.setParams({ otp: mockOTP });
+    try {
+      const result = await viewModel.requestResetPassword(email);
+      console.log('Resend OTP result:', result);
+      if (result.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'OTP Resent',
+          text2: result.message,
+        });
+        navigation.setParams({ token: result.token });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to Resend OTP',
+          text2: result.error.includes('404')
+            ? 'Email not found.'
+            : result.error.includes('network') || result.error.includes('timeout')
+            ? 'Network error. Please check your connection.'
+            : result.error,
+        });
+      }
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message.includes('network') || error.message.includes('timeout')
+          ? 'Network error. Please check your connection.'
+          : error.message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -132,11 +199,11 @@ const OTPScreen = () => {
         ) : null}
         <View style={styles.resendContainer}>
           <StyledText style={styles.resendText}>Didn't receive the code? </StyledText>
-          <TouchableOpacity onPress={handleResend} disabled={resendCooldown > 0}>
+          <TouchableOpacity onPress={handleResend} disabled={resendCooldown > 0 || isLoading}>
             <StyledText
               style={[
                 styles.resendLink,
-                resendCooldown > 0 ? styles.resendLinkDisabled : null,
+                resendCooldown > 0 || isLoading ? styles.resendLinkDisabled : null,
               ]}
             >
               Resend {resendCooldown > 0 ? `(${resendCooldown}s)` : ''}
@@ -153,6 +220,7 @@ const OTPScreen = () => {
           style={styles.submitButton}
         />
       </View>
+      <Toast />
     </ScrollableMainContainer>
   );
 };
@@ -259,6 +327,18 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 32,
     backgroundColor: colors.primary[600],
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  errorText: {
+    fontSize: 16,
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 10,
   },
 });
 

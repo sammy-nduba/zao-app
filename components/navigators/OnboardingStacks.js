@@ -5,17 +5,23 @@ import Welcome from '../../screens/Welcome';
 import LanguageSelectionScreen from '../../screens/LanguageSelectionScreen';
 import { AuthContext } from '../../utils/AuthContext';
 import { colors } from '../../config/theme';
-import container from '../../infrastructure/di/Container';
 import { useTranslation } from 'react-i18next';
+import { useContainer } from '../../utils/ContainerProvider';
+
 
 const Stack = createStackNavigator();
 
-const LanguageSelectionScreenWrapper = (props) => (
-  <LanguageSelectionScreen
-    presenter={container.get('languageSelectionPresenter')}
-    navigation={props.navigation}
-  />
-);
+const LanguageSelectionScreenWrapper = (props) => {
+  const container = useContainer();
+  const presenter = container.get('languageSelectionPresenter');
+  
+  return (
+    <LanguageSelectionScreen
+      presenter={presenter}
+      navigation={props.navigation}
+    />
+  );
+};
 
 const OnboardingStack = () => {
   const { t } = useTranslation();

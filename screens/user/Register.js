@@ -1,3 +1,4 @@
+// src/screens/Register.js
 import React, { useState, useContext, useEffect } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
 import { ScrollableMainContainer } from '../../components';
@@ -19,7 +20,6 @@ const Register = () => {
     email: '',
     phoneNumber: '',
     password: '',
-    token: '',
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -68,11 +68,32 @@ const Register = () => {
     const handleDeepLink = async (event) => {
       const url = event.url;
       console.log('Deep link received:', url);
-      const token = new URL(url).searchParams.get('token');
-      if (token && viewModel) {
-        setFormData((prev) => ({ ...prev, token }));
-        setStep('verify');
-        await handleRegister();
+      if (url) {
+        try {
+          const urlObj = new URL(url);
+          const token = urlObj.searchParams.get('token');
+          const email = urlObj.searchParams.get('email');
+          console.log('Extracted from deep link:', { token, email });
+          if (token && email) {
+            setFormData((prev) => ({ ...prev, email }));
+            setStep('verify');
+            navigation.navigate('EmailVerification', { token, email });
+          } else {
+            console.error('Missing token or email in deep link:', url);
+            Toast.show({
+              type: 'error',
+              text1: 'Error',
+              text2: 'Invalid verification link. Please check the email link or resend verification.',
+            });
+          }
+        } catch (error) {
+          console.error('Deep link parsing error:', error);
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'Failed to process verification link. Please try again.',
+          });
+        }
       }
     };
 
@@ -81,7 +102,7 @@ const Register = () => {
       if (url) handleDeepLink({ url });
     });
     return () => Linking.removeAllListeners('url');
-  }, [viewModel]);
+  }, [viewModel, navigation]);
 
   if (!viewModel) {
     return (
@@ -117,32 +138,53 @@ const Register = () => {
       const result = await viewModel.initiateSignup(formData);
       console.log('Initiate signup result:', result);
       if (result.success) {
-        setFormData((prev) => ({ ...prev, token: result.token }));
         setStep('verify');
         Toast.show({
           type: 'success',
           text1: 'Verification Email Sent',
-          text2: result.message,
+          text2: result.message || 'Please check your email to verify your account!',
+        });
+        navigation.navigate('EmailVerification', {
+          token: result.token,
+          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phoneNumber: formData.phoneNumber,
         });
       } else {
-        setFieldErrors(result.fieldErrors || { email: result.error });
+        setFieldErrors(result.fieldErrors || {});
         Toast.show({
           type: 'error',
           text1: 'Signup Failed',
-          text2: result.error,
+          text2: result.error?.includes('409')
+            ? 'Email already registered. Please log in.'
+            : result.error?.includes('network') || result.error?.includes('timeout')
+            ? 'Network error. Please check your connection.'
+            : result.error || 'Please check your details and try again.',
         });
+        if (result.error?.includes('409')) {
+          navigation.navigate('Login');
+        }
       }
     } catch (error) {
-      console.error('Initiate signup error:', error);
+      console.error('Initiate signup error:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error.message.includes('502')
-          ? 'Server is currently unavailable. Please try again later.'
-          : error.message.includes('timed out')
-          ? 'Request timed out. Please check your connection.'
-          : error.message,
+        text2: error.message.includes('network') || error.message.includes('timeout')
+          ? 'Network error. Please check your connection.'
+          : error.message.includes('409')
+          ? 'Email already registered. Please log in.'
+          : error.message || 'Failed to initiate registration.',
       });
+      if (error.message.includes('409')) {
+        navigation.navigate('Login');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -153,7 +195,7 @@ const Register = () => {
     setFieldErrors({});
     try {
       console.log('Completing registration with token:', formData.token);
-      const result = await viewModel.register(formData.token);
+      const result = await viewModel.verifyEmail(formData.token);
       console.log('Register result:', result);
       if (result.success) {
         setIsRegistered(true);
@@ -176,16 +218,31 @@ const Register = () => {
         Toast.show({
           type: 'error',
           text1: 'Registration Failed',
-          text2: result.error || 'Please check your information and try again.',
+          text2: result.error?.includes('400')
+            ? 'Invalid verification token. Please resend the verification email.'
+            : result.error?.includes('401')
+            ? 'Invalid or expired token.'
+            : result.error?.includes('502')
+            ? 'Server error. Please try again later.'
+            : result.error || 'Please check your information and try again.',
         });
       }
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Registration error:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error.message.includes('502')
-          ? 'Server is currently unavailable. Please try again later.'
+        text2: error.message.includes('400')
+          ? 'Invalid verification token. Please resend the verification email.'
+          : error.message.includes('401')
+          ? 'Invalid or expired token.'
+          : error.message.includes('502')
+          ? 'Server error. Please try again later.'
           : error.message.includes('timed out')
           ? 'Request timed out. Please check your connection.'
           : error.message.includes('AsyncStorage')
@@ -215,15 +272,30 @@ const Register = () => {
         Toast.show({
           type: 'error',
           text1: 'Resend Failed',
-          text2: result.error,
+          text2: result.error?.includes('404')
+            ? 'No pending registration found.'
+            : result.error?.includes('429')
+            ? 'Too many requests. Please try again after 30 minutes.'
+            : result.error || 'Failed to resend verification email.',
         });
       }
     } catch (error) {
-      console.error('Resend verification error:', error);
+      console.error('Resend verification error:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error.message,
+        text2: error.message.includes('network') || error.message.includes('timeout')
+          ? 'Network error. Please check your connection.'
+          : error.message.includes('429')
+          ? 'Too many requests. Please try again after 30 minutes.'
+          : error.message.includes('502')
+          ? 'Server error. Please try again later.'
+          : error.message,
       });
     } finally {
       setIsLoading(false);
@@ -279,6 +351,7 @@ const Register = () => {
   return (
     <ScrollableMainContainer contentContainerStyle={styles.container}>
       <View style={styles.vectorContainer}>
+        <Image source={require('../../assets/Vector 1.png')} />
         <Image source={require('../../assets/Vector.png')} style={styles.vector2} />
       </View>
 
@@ -483,6 +556,7 @@ const Register = () => {
     </ScrollableMainContainer>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -699,21 +773,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: colors.grey[600],
-  },
 });
 
 export default Register;
-
-
-
-

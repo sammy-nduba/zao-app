@@ -23,9 +23,12 @@
     "axios": "^1.9.0",
     "expo": "53.0.15",
     "expo-linear-gradient": "~14.1.4",
+    "expo-linking": "~7.1.6",
     "expo-secure-store": "~14.2.3",
     "expo-splash-screen": "^0.30.9",
     "expo-status-bar": "~2.2.3",
+    "expo-system-ui": "~5.0.9",
+    "expo-updates": "~0.28.15",
     "i18next": "^25.2.1",
     "lodash": "^4.17.21",
     "nativewind": "^4.1.23",
@@ -33,7 +36,6 @@
     "react-dom": "19.0.0",
     "react-i18next": "^15.5.2",
     "react-native": "0.79.4",
-    "react-native-code-push": "^9.0.1",
     "react-native-curved-bottom-bar": "^3.5.1",
     "react-native-date-picker": "^4.3.7",
     "react-native-fbsdk": "^3.0.0",
@@ -44,10 +46,7 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.10.0",
     "react-native-toast-message": "^2.3.0",
-    "react-native-vector-icons": "^10.2.0",
-    "expo-updates": "~0.28.15",
-    "expo-system-ui": "~5.0.9",
-    "expo-linking": "~7.1.6"
+    "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

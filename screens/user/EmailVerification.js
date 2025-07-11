@@ -8,6 +8,7 @@ import { colors } from '../../config/theme';
 import { AuthContext } from '../../utils/AuthContext';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import container from '../../infrastructure/di/Container';
 import { EmailVerificationViewModel } from '../../viewModel/EmailVerificationViewModel';
 
@@ -15,13 +16,17 @@ const EmailVerification = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [token, setToken] = useState(null);
   const [email, setEmail] = useState(null);
+  const [userData, setUserData] = useState(null);
   const { setIsVerified, setIsRegistered, setUser } = useContext(AuthContext);
   const navigation = useNavigation();
   const route = useRoute();
 
   const viewModel = useMemo(() => {
     try {
-      return new EmailVerificationViewModel(container.get('verifyEmailUseCase'));
+      if (!container.isInitialized) {
+        throw new Error('Container not initialized. Please wait.');
+      }
+      return new EmailVerificationViewModel(container.get('registerUserUseCase'));
     } catch (error) {
       console.error('EmailVerification: Failed to initialize ViewModel:', error);
       Toast.show({
@@ -35,15 +40,35 @@ const EmailVerification = () => {
     }
   }, []);
 
+  // Handle route params and deep links
   useEffect(() => {
-    const handleDeepLink = async (event) => {
-      const url = event.url;
+    const handleDeepLink = async ({ url }) => {
       console.log('Deep link received:', url);
       if (url) {
-        const tokenFromUrl = new URL(url).searchParams.get('token');
-        if (tokenFromUrl) {
-          setToken(tokenFromUrl);
-          await handleVerify(tokenFromUrl);
+        try {
+          const urlObj = new URL(url);
+          const tokenFromUrl = urlObj.searchParams.get('token');
+          const emailFromUrl = urlObj.searchParams.get('email');
+          console.log('Extracted from deep link:', { tokenFromUrl, emailFromUrl });
+          if (tokenFromUrl && emailFromUrl) {
+            setToken(tokenFromUrl);
+            setEmail(emailFromUrl);
+            setUserData({}); // No userData from deep link
+          } else {
+            console.error('Missing token or email in deep link:', url);
+            Toast.show({
+              type: 'error',
+              text1: 'Error',
+              text2: 'Invalid verification link. Please check the email link or resend verification.',
+            });
+          }
+        } catch (error) {
+          console.error('Deep link parsing error:', error);
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'Failed to process verification link.',
+          });
         }
       }
     };
@@ -53,21 +78,34 @@ const EmailVerification = () => {
       if (url) handleDeepLink({ url });
     });
 
-    // Set token and email from route params if available
     if (route.params?.token && route.params?.email) {
+      console.log('Route params:', route.params);
       setToken(route.params.token);
       setEmail(route.params.email);
+      setUserData({
+        firstName: route.params.firstName,
+        lastName: route.params.lastName,
+        phoneNumber: route.params.phoneNumber,
+      });
     }
 
     return () => Linking.removeAllListeners('url');
-  }, [route.params, viewModel]);
+  }, [route.params]);
 
-  const handleVerify = async (verifyToken = token) => {
-    if (!viewModel || !verifyToken) {
+  // Trigger verification after token and email are set
+  useEffect(() => {
+    if (viewModel && token && email && !isLoading) {
+      handleVerify(token);
+    }
+  }, [viewModel, token, email]);
+
+  const handleVerify = async (verifyToken) => {
+    if (!viewModel || !verifyToken || !email) {
+      console.error('Missing viewModel, token, or email:', { viewModel, verifyToken, email });
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Verification token missing or app not ready.',
+        text2: 'Verification token or email missing, or app not ready.',
       });
       return;
     }
@@ -77,11 +115,15 @@ const EmailVerification = () => {
       const result = await viewModel.verifyEmail(verifyToken);
       console.log('Verification result:', result);
       if (result.success) {
+        await AsyncStorage.setItem('jwtToken', result.user.token);
         setIsVerified(true);
         setIsRegistered(true);
         setUser({
           id: result.user.id,
+          firstName: userData?.firstName || '',
+          lastName: userData?.lastName || '',
           email: result.user.email,
+          phoneNumber: userData?.phoneNumber || '',
           token: result.user.token,
         });
         Toast.show({
@@ -91,26 +133,24 @@ const EmailVerification = () => {
         });
         navigation.navigate('FarmDetails');
       } else {
+        console.error('Verification failed:', result.error);
         Toast.show({
           type: 'error',
           text1: 'Verification Failed',
-          text2: result.error.includes('expired')
-            ? 'Verification link expired. Please resend.'
-            : result.error.includes('401')
-            ? 'Invalid or expired token.'
-            : result.error,
+          text2: result.error,
         });
       }
     } catch (error) {
-      console.error('Verification error:', error);
+      console.error('Verification error:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error.message.includes('timed out')
-          ? 'Request timed out. Please check your connection.'
-          : error.message.includes('401')
-          ? 'Invalid or expired token.'
-          : `Verification error: ${error.message}`,
+        text2: error.message,
       });
     } finally {
       setIsLoading(false);
@@ -119,6 +159,7 @@ const EmailVerification = () => {
 
   const handleResendVerification = async () => {
     if (!viewModel || !email) {
+      console.error('Missing viewModel or email:', { viewModel, email });
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -129,7 +170,7 @@ const EmailVerification = () => {
     setIsLoading(true);
     try {
       console.log('Resending verification for:', email);
-      const result = await container.get('registerUserUseCase').resendVerification(email);
+      const result = await viewModel.resendVerification(email);
       console.log('Resend verification result:', result);
       if (result.success) {
         setToken(result.token);
@@ -139,20 +180,24 @@ const EmailVerification = () => {
           text2: result.message,
         });
       } else {
+        console.error('Resend verification failed:', result.error);
         Toast.show({
           type: 'error',
           text1: 'Resend Failed',
-          text2: result.error.includes('404') ? 'No pending registration found.' : result.error,
+          text2: result.error,
         });
       }
     } catch (error) {
-      console.error('Resend verification error:', error);
+      console.error('Resend verification error:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error.message.includes('network') || error.message.includes('timeout')
-          ? 'Network error. Please check your connection.'
-          : error.message,
+        text2: error.message,
       });
     } finally {
       setIsLoading(false);
@@ -163,7 +208,7 @@ const EmailVerification = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary[600]} />
-        <StyledText style={{ marginTop: 10, color: 'red', textAlign: 'center' }}>
+        <StyledText style={styles.errorText}>
           Failed to initialize verification. Please restart the app.
         </StyledText>
       </View>
@@ -175,14 +220,18 @@ const EmailVerification = () => {
       <View style={styles.header}>
         <StyledText style={styles.title}>Verify Your Email</StyledText>
         <StyledText style={styles.subtitle}>
-          Please verify your email to continue setting up your account.
+          {isLoading
+            ? 'Verifying your email...'
+            : token
+            ? 'Processing email verification...'
+            : `A verification link has been sent to ${email || 'your email'}. Please click the link or use the button below to resend.`}
         </StyledText>
       </View>
       <View style={styles.buttonContainer}>
         <StyledButton
-          title="Verify Email"
-          onPress={handleVerify}
-          disabled={isLoading || !token}
+          title="Retry Verification"
+          onPress={() => handleVerify(token)}
+          disabled={isLoading || !token || !email}
           style={styles.verifyButton}
         />
         <StyledButton
@@ -191,6 +240,12 @@ const EmailVerification = () => {
           disabled={isLoading || !email}
           style={styles.verifyButton}
         />
+        <StyledButton
+          title="Back to Register"
+          onPress={() => navigation.navigate('Register')}
+          disabled={isLoading}
+          style={[styles.verifyButton, styles.backButton]}
+        />
       </View>
     </ScrollableMainContainer>
   );
@@ -198,6 +253,8 @@ const EmailVerification = () => {
 
 const styles = StyleSheet.create({
   container: {
+    marginTop: 200,
+    marginBottom: 300,
     flexGrow: 1,
     padding: 24,
     backgroundColor: colors.background,
@@ -224,6 +281,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.grey[500],
     fontWeight: '400',
+    textAlign: 'center',
   },
   buttonContainer: {
     marginBottom: 24,
@@ -234,6 +292,15 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     backgroundColor: colors.primary[600],
     marginBottom: 12,
+  },
+  backButton: {
+    backgroundColor: colors.grey[300],
+  },
+  errorText: {
+    fontSize: 16,
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 10,
   },
 });
 
